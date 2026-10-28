@@ -1,0 +1,13 @@
+[project]
+name = "nbs-carbon"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.15"
+dependencies = []
+
+[project.scripts]
+nbs-carbon = "nbs_carbon:main"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
