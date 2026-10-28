@@ -1,3 +1,26 @@
-.venv
+# Environment
+.venv/
 .env
+
+# Python
 __pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.pyright/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Local data
+*.db
+*.sqlite3
