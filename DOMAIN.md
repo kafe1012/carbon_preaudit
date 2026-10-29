@@ -101,6 +101,8 @@ Bewusst weggelassen, im README so benennen:
 - Nur oberirdische Biomasse, kein Wurzel-, Tot- oder Bodenkohlenstoff
 - Keine Unsicherheits- und Leakage-Abzüge
 - Puffer als fester Prozentsatz statt Risikotool
+- Holzdichte-Default 0,6 g/cm³ als Demo-Annahme, wenn die Messung fehlt; der Lauf weist aus,
+  für wie viele Bäume der Default verwendet wurde
 - Keine methodologiekonforme VM0047-Berechnung
 
 ## Begriffe für Code-Bezeichner

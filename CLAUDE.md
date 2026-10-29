@@ -18,19 +18,28 @@ bevor ein Auditor die Abweichung findet.
 
 - Eingabe A: Projektfläche als GeoJSON-Polygon (WGS84)
 - Eingabe B: Messdaten als CSV: `plot_id, plot_area_m2, tree_id, dbh_cm, height_m, wood_density`
-  (`wood_density` in g/cm³, optional, Default aus Parametern)
+  (`wood_density` in g/cm³, optional, Default 0.6 aus Parametern; der Lauf zählt,
+  für wie viele Bäume der Default verwendet wurde)
 - Berechnungslauf:
   - Fläche in ha (geodätisch, `pyproj.Geod`)
   - Oberirdische Biomasse je Baum: Chave et al. 2014, `AGB_kg = 0.0673 * (ρ * D² * H) ** 0.976`
   - Kohlenstoff = Biomasse × 0.47, CO₂e = C × 44/12
-  - Mittelwert tCO₂e/ha über alle Plots, hochgerechnet auf die Fläche
-  - Pufferabzug (Default 20 %), Ergebnis = handelbare tCO₂e
+  - tCO₂e/ha flächengewichtet: Σ tCO₂e aller Plots / Σ Plot-Fläche in ha, × `project_area_ha`
+  - Pufferabzug (`buffer_pct` in Prozent, Default 20), Ergebnis = handelbare tCO₂e
   - Alle Konstanten in `src/carbon_preaudit/calc/params.py` mit `PARAMS_VERSION`
+  - Hash über kanonische Eingaben + `PARAMS_VERSION` + `CALC_VERSION` (ADR 0002)
 - Pre-Audit:
-  - LLM extrahiert `ClaimedValues` (area_ha, tco2e_gross, tco2e_net, buffer_pct, methodology),
-    jeweils mit wörtlichem Zitat oder `null`
-  - Deterministischer Abgleich mit Toleranzen (Fläche 1 %, Tonnen 2 %, Puffer exakt)
-  - Ergebnis: Liste von `Finding`
+  - LLM extrahiert `ClaimedValues` (project_area_ha, tco2e_gross, tco2e_net, buffer_pct,
+    methodology), jeweils mit wörtlichem Zitat oder `null`, ohne Umrechnung
+  - Deterministischer Abgleich, Toleranzen relativ zum berechneten Wert
+    (`|c − k| / k`): Fläche 1 %, Tonnen 2 %; Puffer `math.isclose(abs_tol=0.01)`;
+    Methodologie per `VM\d{4}` normalisiert, erwartet VM0047
+  - Schweregrade: Tonnen abweichend → kritisch; Fläche, Puffer, Methodologie abweichend → wichtig;
+    Wert fehlt → hinweis
+  - Diagnosen: behauptet ≈ berechnet / (44/12) → „vermutlich tC statt tCO₂e“;
+    behauptetes Netto ≈ berechnetes Brutto → „brutto/netto verwechselt“
+  - Zitat nicht wörtlich im Text → Wert wird nicht verglichen, Befund „hinweis“
+  - Ergebnis: Liste von `Finding`; Details in `docs/plans/01-architecture.md`
 - Evals: Testfälle mit absichtlich eingebauten Fehlern, Metriken Precision/Recall
 - Eine Weboberfläche: Karte, Kennzahlen, markierter Text, Befundliste
 
@@ -79,6 +88,8 @@ docs/          # plans/, adr/, reviews/
 - Bezeichner, Docstrings und Commits auf Englisch; Doku in `docs/` und README auf Deutsch
 - Type Hints überall, keine `Any` in `src/`
 - Reine Funktionen in `calc/` und `preaudit/compare.py`, keine I/O dort
+- Jede Logikänderung in `calc/` erhöht `CALC_VERSION`, jede Wertänderung in `params.py`
+  erhöht `PARAMS_VERSION`; Golden-Tests führen Sollwerte nach Version
 - Kein Netzwerkzugriff in Unit-Tests: immer `FakeExtractor`
 - Fehler als eigene Exception-Klassen, keine nackten `except`
 
