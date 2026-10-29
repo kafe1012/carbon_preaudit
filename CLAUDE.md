@@ -62,15 +62,48 @@ Diese Punkte landen nur im README-Abschnitt „Bewusst nicht enthalten“.
 
 ## Befehle
 
+Einrichtung eines Rechners: siehe `README.md`.
+
+Alle Hooks auf allen Dateien:
+
 ```bash
-uv sync
-uv run pre-commit install         # einmalig: Hooks für ruff, pyright, uv-lock, commitlint
 uv run pre-commit run --all-files
-uv run ruff check . && uv run ruff format --check .
+```
+
+Lint:
+
+```bash
+uv run ruff check .
+```
+
+Formatierung prüfen:
+
+```bash
+uv run ruff format --check .
+```
+
+Typprüfung:
+
+```bash
 uv run pyright
+```
+
+Tests:
+
+```bash
 uv run pytest
+```
+
+Web-App lokal:
+
+```bash
 uv run uvicorn carbon_preaudit.web.app:app --reload
-uv run python -m evals            # braucht ANTHROPIC_API_KEY
+```
+
+Evals (braucht `ANTHROPIC_API_KEY` in `.env`):
+
+```bash
+uv run --env-file .env python -m evals
 ```
 
 ## Struktur
