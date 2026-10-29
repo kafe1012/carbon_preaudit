@@ -25,7 +25,7 @@ bevor ein Auditor die Abweichung findet.
   - Kohlenstoff = Biomasse × 0.47, CO₂e = C × 44/12
   - Mittelwert tCO₂e/ha über alle Plots, hochgerechnet auf die Fläche
   - Pufferabzug (Default 20 %), Ergebnis = handelbare tCO₂e
-  - Alle Konstanten in `src/nbs_carbon/calc/params.py` mit `PARAMS_VERSION`
+  - Alle Konstanten in `src/carbon_preaudit/calc/params.py` mit `PARAMS_VERSION`
 - Pre-Audit:
   - LLM extrahiert `ClaimedValues` (area_ha, tco2e_gross, tco2e_net, buffer_pct, methodology),
     jeweils mit wörtlichem Zitat oder `null`
@@ -56,14 +56,14 @@ uv sync
 uv run ruff check . && uv run ruff format --check .
 uv run pyright
 uv run pytest
-uv run uvicorn nbs_carbon.web.app:app --reload
+uv run uvicorn carbon_preaudit.web.app:app --reload
 uv run python -m evals            # braucht ANTHROPIC_API_KEY
 ```
 
 ## Struktur
 
 ```
-src/nbs_carbon/
+src/carbon_preaudit/
   domain/      # Pydantic-Modelle: Plot, Tree, CalculationRun, ClaimedValues, Finding
   calc/        # Fläche, Allometrie, Hash, params.py
   preaudit/    # extractor.py (Protocol + Anthropic + Fake), compare.py
