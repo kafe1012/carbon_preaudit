@@ -182,11 +182,13 @@ Die Nummern entsprechen `WEEKEND-PLAN.md` und den Review-Dateien in `docs/review
 
 ### 02 Projektgerüst
 
-FastAPI-App in `web/app.py` mit `GET /health`, Dockerfile, GitHub Actions (ruff check, ruff format --check,
-pyright, pytest). Der `chore`-Agent legt unter `examples/` ein GeoJSON-Polygon von ca. 100 ha in Costa Rica an,
-dazu eine CSV mit 3 Plots à 400 m² und je 8–12 Bäumen.
+FastAPI-App in `web/app.py` mit `GET /health`, Dockerfile, GitHub Actions. Der Workflow führt
+`uv run pre-commit run --all-files` und `uv run pytest` aus und prüft den PR-Titel auf Conventional Commits.
+Der `chore`-Agent legt unter `examples/` ein GeoJSON-Polygon von ca. 100 ha in Costa Rica an, dazu eine CSV
+mit 3 Plots à 400 m² und je 8–12 Bäumen.
 
-**DoD:** CI grün auf GitHub, `/health` hat einen Test, `docker build` läuft durch.
+**DoD:** CI grün auf GitHub, `/health` hat einen Test, `docker build` läuft durch. Die CI-Jobs sind im
+Ruleset für `master` als Pflicht-Checks eingetragen (ADR 0005).
 
 ### 03 Berechnungslauf
 

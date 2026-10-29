@@ -137,12 +137,22 @@ docs/          # plans/, adr/, reviews/
 3. **Prüfen:** ruff, pyright, pytest müssen grün sein, bevor ein Review startet.
 4. **Review:** Subagent `reviewer` (Fable) schreibt Befunde nach `docs/reviews/NN-<thema>.md`.
 5. **Ausbessern:** `implementer` arbeitet die Befunde ab und hakt sie in der Review-Datei ab.
-6. **Abnahme:** Hauptsession (Opus) prüft gegen Plan und ADRs, dann Commit.
+6. **Abnahme:** Hauptsession (Opus) prüft gegen Plan und ADRs, dann PR und Squash-Merge.
 - Subagent `chore` (Haiku) nur für Mechanisches: Testdaten, Beispieldateien, Doku-Formatierung, Lint-Fixes.
+
+## Git-Workflow (ADR 0005)
+
+- Nie direkt auf `master` committen oder pushen. Jeder Plan-Schritt bekommt einen eigenen Branch,
+  benannt nach Typ und Schritt: `feat/03-calculation`, `docs/01-architecture`, `chore/<thema>`.
+- Ein PR pro Schritt. Der PR-Titel ist eine Conventional-Commit-Nachricht, denn mit Squash-Merge wird
+  er zum einzigen Commit auf `master`.
+- Der PR verlinkt Plan-Schritt und Review-Datei (`.github/pull_request_template.md`).
+- Gemergt wird nur, wenn die Checks grün sind und der Mensch freigegeben hat. Danach wird der Branch gelöscht.
+- Kein Force-Push, kein `--no-verify`, keine Merge-Commits.
 
 ## Definition of Done (pro Schritt)
 
 - ruff, pyright, pytest grün
 - Neue Logik hat Tests, Berechnungen haben mindestens einen Golden-Test mit Handrechnung
 - Plan-Datei aktualisiert (erledigt / verschoben)
-- Ein Commit pro Schritt, Conventional Commits (`feat:`, `test:`, `docs:`, `chore:`)
+- Ein Squash-Merge pro Schritt, Conventional Commits (`feat:`, `test:`, `docs:`, `chore:`)
