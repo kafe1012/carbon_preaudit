@@ -53,6 +53,8 @@ Diese Punkte landen nur im README-Abschnitt „Bewusst nicht enthalten“.
 
 - Python 3.15, **uv** (kein pip, kein poetry)
 - **ruff** (Lint + Format), **pyright** (strict für `src/`), **pytest**
+- **pre-commit**: ruff, pyright und `uv lock` vor jedem Commit, commitlint (Conventional Commits)
+  auf jede Commit-Nachricht; Hooks nie mit `--no-verify` umgehen
 - FastAPI, Pydantic v2, Jinja2 + HTMX, Leaflet (beides per CDN, Version gepinnt)
 - SQLAlchemy 2 mit SQLite (ADR begründet den späteren Wechsel zu Postgres)
 - Anthropic Python SDK hinter eigener Schnittstelle `Extractor` (Protocol); kein LangChain
@@ -62,6 +64,8 @@ Diese Punkte landen nur im README-Abschnitt „Bewusst nicht enthalten“.
 
 ```bash
 uv sync
+uv run pre-commit install         # einmalig: Hooks für ruff, pyright, uv-lock, commitlint
+uv run pre-commit run --all-files
 uv run ruff check . && uv run ruff format --check .
 uv run pyright
 uv run pytest

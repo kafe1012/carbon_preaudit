@@ -1,0 +1,42 @@
+default_install_hook_types: [pre-commit, commit-msg, post-checkout, post-merge, post-rewrite]
+default_stages: [pre-commit]
+repos:
+- hooks:
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - args:
+    - --markdown-linebreak-ext=md
+    id: trailing-whitespace
+  repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+- hooks:
+  - args:
+    - --fix
+    - --exit-non-zero-on-fix
+    id: ruff-check
+  - id: ruff-format
+  repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.17.3
+- hooks:
+  - args:
+    - --all-groups
+    id: uv-sync
+  - id: uv-lock
+  repo: https://github.com/astral-sh/uv-pre-commit
+  rev: 0.13.6
+- hooks:
+  - entry: uv run pyright
+    files: \.py$
+    id: typecheck
+    language: system
+    name: run static type checker
+    pass_filenames: false
+  repo: local
+- hooks:
+  - additional_dependencies:
+    - '@commitlint/config-conventional'
+    id: commitlint
+    stages:
+    - commit-msg
+  repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+  rev: v9.23.0
