@@ -9,7 +9,7 @@ Kategorie nach Fundort. Der Schweregrad stuft die Auswirkung ein, er ist keine P
 |-----------|--------|----------|------|--------|---------|-------------------|
 | K1 Verschluckte Fehler, stille Fallbacks | 1 | 0 | 0 | 1 | 0 | 0 |
 | K2 Symptome statt Ursachen | 1 | 0 | 0 | 0 | 1 | 1 |
-| K3 Reward Hacking, schwache Tests | 8 | 0 | 0 | 1 | 7 | 0 |
+| K3 Reward Hacking, schwache Tests | 9 | 0 | 0 | 1 | 8 | 0 |
 | K4 Scope Creep | 3 | 0 | 1 | 0 | 2 | 0 |
 | K5 Over-Engineering | 0 | 0 | 0 | 0 | 0 | 0 |
 | K6 Duplikation | 5 | 0 | 0 | 0 | 5 | 1 |
@@ -19,7 +19,7 @@ Kategorie nach Fundort. Der Schweregrad stuft die Auswirkung ein, er ist keine P
 | K10 Kontextverlust | 1 | 0 | 0 | 0 | 1 | 1 |
 | K11 Security, Performance, Edge Cases | 5 | 0 | 2 | 1 | 2 | 1 |
 | K12 Unnötige Dependencies, Rauschen | 1 | 0 | 0 | 0 | 1 | 0 |
-| **gesamt** | **32** | **0** | **3** | **7** | **22** | **5** |
+| **gesamt** | **33** | **0** | **3** | **7** | **23** | **5** |
 
 ## K1 – Verschluckte Fehler und stille Fallbacks
 
@@ -185,6 +185,24 @@ Kategorie nach Fundort. Der Schweregrad stuft die Auswirkung ein, er ist keine P
 - Möglicher Korrekturansatz: Die beiden ersten entfernen, die drei Geometrietypen parametrisieren.
 - Verhaltensänderung bei Korrektur: nein
 - Abhängigkeiten: keine
+- Aufwand: S
+
+### F-33 – Parametertabellen mit vielen gleichartigen Fällen
+- Kategorie: K3
+- Ort: `tests/test_compare.py` (`test_number_candidates`, `test_value_found_in_quote`, weitere),
+  `tests/test_inputs.py`, `tests/test_bump_script.py`, `tests/test_evals_cases.py`, `tests/test_hash.py`
+- Schweregrad: niedrig
+- Sicherheit: belegt
+- Beleg: Nach F-25 bis F-31 zählte pytest weiter 324 Tests, davon rund 130 Zeilen in Parametertabellen.
+  Beispiele: 18 Fälle für `number_candidates`, 15 für „Wert im Zitat“ (fast alle Varianten derselben
+  Zahlenlesung, die `number_candidates` bereits prüft), 11 ungültige CSV-Zahlen, 10 ungültige Versionen.
+  Aufgenommen auf Hinweis des Menschen („über 300 Tests für diese Menge Code“).
+- Auswirkung: Viele Zeilen prüfen dieselbe Regel mit anderen Zahlen; die Zahl der Tests sagt wenig über
+  die Abdeckung aus.
+- Möglicher Korrekturansatz: (a) Je Regel bzw. Code-Zweig ein Fall, Grenzfälle behalten; über `compare()`
+  nur noch die Integration, Zahlenlesung allein an `number_candidates`.
+- Verhaltensänderung bei Korrektur: nein
+- Abhängigkeiten: F-25 bis F-31
 - Aufwand: S
 
 ## K4 – Scope Creep

@@ -39,3 +39,4 @@ Finding-ID freigegeben wird.
 | F-30 | Beispieldaten an fünf Stellen end-to-end geprüft | niedrig | korrigieren | Ansatz (a), freigegeben im Chat am 2026-10-31 |
 | F-31 | Tests ohne eigene Aussage | niedrig | korrigieren | Ansatz (a), freigegeben im Chat am 2026-10-31 |
 | F-32 | Container-Start laut README ohne API-Key | mittel |  | neu entdeckt bei F-21, Entscheidung offen |
+| F-33 | Parametertabellen mit vielen gleichartigen Fällen | niedrig | korrigieren | Ansatz (a), freigegeben im Chat am 2026-10-31 („Ja, kürzen“) |

@@ -2,9 +2,10 @@
 
 ## Überblick
 
-Das Audit ergab 31 Findings (3 hoch, 6 mittel, 22 niedrig), dazu kam bei der Korrektur F-32. Der Mensch
+Das Audit ergab 31 Findings (3 hoch, 6 mittel, 22 niedrig), dazu kamen bei der Korrektur F-32 (neu entdeckt)
+und F-33 (auf Hinweis des Menschen zur Testmenge, freigegeben und korrigiert). Der Mensch
 hat am 2026-10-31 alle 31 mit Ansatz (a) freigegeben und F-14 und F-15 zurückgestellt, weil sie echte
-API-Läufe brauchen. Korrigiert sind 29 Findings, jedes in einem eigenen Commit. F-32 ist neu und nicht
+API-Läufe brauchen. Korrigiert sind 30 Findings, jedes in einem eigenen Commit. F-32 ist neu und nicht
 korrigiert. Tests, Lint und Typecheck sind vor und nach der Korrektur grün.
 
 ## Findings nach Kategorie
@@ -13,7 +14,7 @@ korrigiert. Tests, Lint und Typecheck sind vor und nach der Korrektur grün.
 |-----------|----------|-------------|------------|-----------------------------------|
 | K1 | 1 | 1 | 1 | 0 |
 | K2 | 1 | 1 | 1 | 0 |
-| K3 | 8 | 8 | 8 | 0 |
+| K3 | 9 | 9 | 9 | 0 |
 | K4 | 3 | 3 | 3 | 0 |
 | K5 | 0 | 0 | 0 | 0 |
 | K6 | 5 | 5 | 5 | 0 |
@@ -23,7 +24,7 @@ korrigiert. Tests, Lint und Typecheck sind vor und nach der Korrektur grün.
 | K10 | 1 | 1 | 1 | 0 |
 | K11 | 5 | 5 | 5 | 0 |
 | K12 | 1 | 1 | 1 | 0 |
-| **gesamt** | **32** | **31** | **29** | **3** |
+| **gesamt** | **33** | **32** | **30** | **3** |
 
 ## Korrigiert (laut Freigabe)
 
@@ -65,6 +66,8 @@ Commit-Scope kleingeschrieben (`fix(f-1)`), weil commitlint `scope-case: lower-c
 - F-29 – Pydantic-Verhalten je Feld – `1a1a660` – Nachweis: nur eigene Validatoren getestet.
 - F-30 – Beispieldaten fünffach – `c68a695` – Nachweis: End-to-end aus `test_compare.py` entfernt.
 - F-31 – Tests ohne Aussage – `9553a70` – Nachweis: zwei entfernt, drei parametrisiert.
+- F-33 – Parametertabellen – `d6e05f9` – Nachweis: 324 → 261 Tests; je Regel bzw. Zweig bleibt ein Fall,
+  alle Prüfungen grün.
 
 ## Freigegeben, aber nicht abgeschlossen
 
@@ -92,18 +95,18 @@ Commit-Scope kleingeschrieben (`fix(f-1)`), weil commitlint `scope-case: lower-c
 
 | Messgröße | vorher | nachher |
 |---|---|---|
-| Tests | 332 passed | 324 passed |
-| Testfunktionen | 225 | 189 |
-| Zeilen Tests | 2 785 | 2 507 |
+| Tests | 332 passed | 261 passed |
+| Testfunktionen | 225 | 177 |
+| Zeilen Tests | 2 785 | 2 394 |
 | Zeilen Code (`src`, `evals`, `tools`) | 2 225 | 2 303 |
-| Laufzeit pytest | rund 33 s | rund 15 s |
+| Laufzeit pytest | rund 33 s | rund 11 s |
 | ruff check | All checks passed | All checks passed |
 | ruff format | 74 files formatted | 77 files formatted |
 | pyright | 0 errors | 0 errors |
 
-Neu grün: keine (vorher war alles grün). Neu rot: keine. Die Zahl der gesammelten Tests sinkt nur um 8,
-weil neue Tests für F-1, F-19, F-20 und F-22 dazukamen und die Extractor-Fehlerfälle jetzt als Parameter
-gezählt werden (16 Fälle in einer Funktion). Die Zahl der Testfunktionen sinkt um 36, die Testzeilen um 278.
+Neu grün: keine (vorher war alles grün). Neu rot: keine. Neue Tests kamen für F-1, F-19, F-20 und F-22 dazu.
+Die verbleibenden 261 prüfen je einen eigenen Zweig oder Grenzfall; die größten Gruppen sind die 16
+Fehlerpfade der Extractors, ein Test je Eval-Fall (12) und die Fehlerpfade der Oberfläche.
 
 ## Nicht verifiziert
 
