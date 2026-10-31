@@ -1,0 +1,10 @@
+id: area-03
+description: Die Fläche wird mit 150 ha statt 100 ha angegeben.
+text: |
+  Biomass in this afforestation and reforestation project on former pasture in Costa Rica was estimated in 2023 from 30 trees across three permanent sample plots of 400 m² each, using the allometric equation of Chave et al. (2014). Plot values were scaled to the project area on an area weighted basis.
+
+  The gross removals of the project amount to 8,364 tCO2e over the crediting period. A buffer of 20 % of the gross removals is withheld to cover the risk of reversal, and the net removals after the buffer deduction amount to 6,691 tCO2e available for issuance. The project area covers 150 ha, as delineated by the polygon provided in Annex A. The activity follows methodology VM0047 (Afforestation, Reforestation and Revegetation) under the Verra VCS programme.
+expected:
+  - field: project_area_ha
+    severity: major
+    diagnosis: null

@@ -1,0 +1,14 @@
+id: missing-02
+description: Die Methodologie wird im Text nicht genannt, auch kein VM-Code.
+text: |
+  The project is an afforestation and reforestation activity on degraded former pasture in Costa Rica, started in 2019. The project area covers 100.0 ha, as delineated by the polygon provided in Annex A. The project is developed under the Verra VCS programme.
+
+  Aboveground biomass was estimated from three permanent sample plots of 400 m² each, using the allometric equation of Chave et al. (2014). Plot values were scaled to the project area on an area weighted basis.
+
+  The gross removals of the project amount to 8,364 tCO2e over the crediting period. A buffer of 20 % of the gross removals is withheld to cover the risk of reversal. After the buffer deduction, the net removals available for issuance amount to 6,691 tCO2e.
+
+  Monitoring follows the plan in Section 9 and will be repeated every five years.
+expected:
+  - field: methodology
+    severity: info
+    diagnosis: null

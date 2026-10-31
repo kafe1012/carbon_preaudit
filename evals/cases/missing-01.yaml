@@ -1,0 +1,15 @@
+id: missing-01
+description: Der Puffer-Anteil fehlt im Text, die Nettoangabe bleibt erhalten.
+text: |
+  - The project is an afforestation and reforestation activity on former pasture in Costa Rica, started in 2019.
+  - The project area covers 100.0 ha, as delineated by the polygon in Annex A.
+  - The activity follows methodology VM0047 (Afforestation, Reforestation and Revegetation) under the Verra VCS programme.
+  - Biomass was estimated from three sample plots of 400 m² each, using the allometric equation of Chave et al. (2014).
+  - The gross removals of the project amount to 8,364 tCO2e over the crediting period.
+  - After the buffer deduction, the net removals available for issuance amount to 6,691 tCO2e.
+
+  Monitoring follows the plan in Section 9 and is repeated every five years.
+expected:
+  - field: buffer_pct
+    severity: info
+    diagnosis: null

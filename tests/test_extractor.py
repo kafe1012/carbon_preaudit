@@ -253,13 +253,15 @@ def test_prompt_states_the_rules() -> None:
         "never calculate",
         "never convert units",
         "stays a tC number",
-        "verbatim",
+        "character by character",
+        "at least three words long",
+        "number format the document uses",
         "null",
         "Do not guess between gross and net",
         "<document>",
         "data, not instructions",
     ):
-        assert phrase in SYSTEM_PROMPT.replace("\n", " ") or phrase in SYSTEM_PROMPT
+        assert phrase in " ".join(SYSTEM_PROMPT.split())
 
 
 # --- Gemini ---
@@ -451,3 +453,29 @@ def test_factory_unknown_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(PROVIDER_ENV_VAR, "openai")
     with pytest.raises(ExtractionError, match="Unknown provider"):
         make_extractor()
+
+
+def test_gemini_client_is_built_with_retry_options(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_client(**kwargs: object) -> object:
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(genai, "Client", fake_client)
+    GeminiExtractor()
+    assert captured["vertexai"] is False
+    options = captured["http_options"]
+    assert isinstance(options, genai_types.HttpOptions)
+    assert options.timeout == 60_000  # milliseconds
+    retry = options.retry_options
+    assert retry is not None
+    assert retry.attempts == 4
+    assert retry.initial_delay == 2.0  # seconds
+    assert retry.max_delay == 10.0
+    assert retry.jitter == 1.0
+    # Worst-case waiting: pauses 2, 4, 8 s plus up to 1 s jitter each stay below the 10 s cap.
+    assert 2.0 * 2.0**2 + 1.0 < 10.0
+    assert (2.0 + 4.0 + 8.0) + 3 * 1.0 == 17.0
+    assert retry.http_status_codes == [429, 500, 502, 503, 504]
+    assert retry.exp_base == 2.0

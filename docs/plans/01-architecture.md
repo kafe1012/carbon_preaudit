@@ -267,6 +267,9 @@ Der `chore`-Agent legt 12 Fälle in `evals/cases/*.yaml` an: 3 fehlerfrei, 3 fal
 getroffen, wenn `field` und `severity` stimmen. Precision und Recall werden je Feld berechnet, Diagnosen
 separat ausgewiesen. Das Ergebnis geht nach `evals/results/latest.md`.
 
+Die 2 Fälle mit falschen Tonnen decken die beiden Diagnosen ab (je einer „vermutlich tC statt tCO₂e“ und
+„brutto/netto verwechselt“).
+
 **DoD:** `uv run python -m evals` läuft durch, der Scorer hat Unit-Tests mit festen Befundlisten.
 
 ### 07 Oberfläche
@@ -288,8 +291,12 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
 - Selbstüberschneidung wird nur je Ring geprüft (alle Segmentpaare, planar in lon/lat). Ringe untereinander
   (Loch außerhalb des Außenrings, sich schneidende Löcher) werden nicht geprüft, nur dass jedes Loch
   flächenmäßig kleiner ist als der Außenring.
-- `compare()` hat keine eigene Version, und Befunde tragen keinen `run_hash`. Klären vor 06/07, ob Befunde
-  reproduzierbar abgelegt werden sollen.
+- `compare()` hat keine eigene Version, und Befunde tragen keinen `run_hash`. Für die Evals hält der Bericht
+  `run_hash`, beide Versionen, App-Version und Modell fest. Eine eigene Version für `compare()` gibt es
+  weiterhin nicht. Die App-Version deckt Änderungen zwischen zwei Releases nicht ab (sie ändert sich nur
+  durch das Bump-Skript, ADR 0006). Deshalb stehen im Bericht zusätzlich der Git-Commit (kurz, mit
+  `-dirty` bei Änderungen im Arbeitsbaum) und ein SHA-256 über `SYSTEM_PROMPT` (12 Zeichen). Für die Oberfläche (07) bleibt offen, ob Befunde abgelegt
+  werden.
 
 ## Fortschritt
 
@@ -298,5 +305,5 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
 - [x] 03 Berechnungslauf
 - [ ] 04 Speicherung der Läufe
 - [x] 05 Pre-Audit
-- [ ] 06 Evals
+- [x] 06 Evals
 - [ ] 07 Oberfläche

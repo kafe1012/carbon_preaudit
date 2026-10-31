@@ -1,0 +1,15 @@
+id: clean-02
+description: Fehlerfreie Aufzählung mit korrekten Werten, keine Befunde erwartet.
+text: |
+  Project summary, Section 4
+
+  - The project is an afforestation and reforestation activity on former pasture in Costa Rica, first planted in 2017.
+  - The project area covers 100 ha, as delineated by the polygon in Annex A.
+  - The activity applies methodology VM0047 (Afforestation, Reforestation and Revegetation) under the Verra VCS programme.
+  - Biomass was measured on 30 trees across three sample plots of 400 m² each.
+  - The gross removals of the project amount to 8,364 tCO2e over the crediting period.
+  - A buffer of 20 % of the gross removals is withheld in the buffer pool.
+  - After the buffer deduction, the net removals available for issuance amount to 6,691 tCO2e.
+
+  Monitoring is described in Section 9.
+expected: []

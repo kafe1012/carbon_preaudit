@@ -32,7 +32,9 @@ dev = [
     "pre-commit>=4.7.0",
     "pyright>=1.1.414",
     "pytest>=9.2.0",
+    "pyyaml>=6.0.3",
     "ruff>=0.17.3",
+    "types-pyyaml>=6.0.12.20261030",
 ]
 
 [tool.ruff]
@@ -46,11 +48,12 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 pythonVersion = "3.15"
 venvPath = "."
 venv = ".venv"
-include = ["src", "tests", "tools"]
-strict = ["src", "tools"]
+include = ["src", "tests", "tools", "evals"]
+strict = ["src", "tools", "evals"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.git-changelog]
 convention = "conventional"
