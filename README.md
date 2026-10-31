@@ -61,10 +61,11 @@ Image bauen:
 podman build -t carbon-preaudit .
 ```
 
-Container im Hintergrund starten:
+Container im Hintergrund starten. Der Port ist nur auf diesem Rechner erreichbar: Jede Prüfung ruft das LLM
+mit deinem Key auf, und es gibt weder Login noch Begrenzung.
 
 ```bash
-podman run -d --rm -p 8000:8000 --name carbon-preaudit carbon-preaudit
+podman run -d --rm -p 127.0.0.1:8000:8000 --name carbon-preaudit carbon-preaudit
 ```
 
 Health-Check, die Antwort ist `{"status":"ok"}`:
