@@ -16,14 +16,13 @@ from carbon_preaudit.calc.run import calculate
 from carbon_preaudit.domain.models import CalculationRun, Finding
 from carbon_preaudit.preaudit.compare import compare
 from carbon_preaudit.preaudit.extractor import (
-    DEFAULT_GEMINI_MODEL,
-    DEFAULT_MODEL,
     DEFAULT_PROVIDER,
-    MODEL_ENV_VAR,
     PROVIDER_ENV_VAR,
     SYSTEM_PROMPT,
+    AnthropicExtractor,
     ExtractionError,
     Extractor,
+    GeminiExtractor,
     make_extractor,
 )
 
@@ -98,13 +97,11 @@ def prompt_hash() -> str:
     return hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest()[:12]
 
 
-def requested_model(provider: str) -> str:
-    """The model the extractor asks for: override from the environment, else provider default."""
-    override = os.environ.get(MODEL_ENV_VAR)
-    if override:
-        return override
-    defaults = {"gemini": DEFAULT_GEMINI_MODEL, "anthropic": DEFAULT_MODEL}
-    return defaults.get(provider, DASH)
+def requested_model(extractor: Extractor) -> str:
+    """The model the extractor asks for, as the extractor itself reports it."""
+    if isinstance(extractor, AnthropicExtractor | GeminiExtractor):
+        return extractor.model
+    return DASH
 
 
 def run_cases(cases: Sequence[Case], extractor: Extractor, run: CalculationRun) -> list[CaseResult]:
@@ -160,7 +157,7 @@ def main(
         generated_at=datetime.now(UTC),
         app_version=version("carbon-preaudit"),
         provider=provider,
-        model=requested_model(provider),
+        model=requested_model(extractor),
         git_commit=git_revision(),
         prompt_hash=prompt_hash(),
     )

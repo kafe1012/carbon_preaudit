@@ -145,6 +145,11 @@ class AnthropicExtractor:
         self._client = client
         self._model = model or os.environ.get(MODEL_ENV_VAR) or DEFAULT_MODEL
 
+    @property
+    def model(self) -> str:
+        """The model this extractor requests."""
+        return self._model
+
     def extract(self, text: str) -> ClaimedValues:
         try:
             response = self._client.beta.messages.create(
@@ -204,6 +209,11 @@ class GeminiExtractor:
                 raise ExtractionError(f"Gemini client could not be created: {e}") from e
         self._client = client
         self._model = model or os.environ.get(MODEL_ENV_VAR) or DEFAULT_GEMINI_MODEL
+
+    @property
+    def model(self) -> str:
+        """The model this extractor requests."""
+        return self._model
 
     def extract(self, text: str) -> ClaimedValues:
         try:
