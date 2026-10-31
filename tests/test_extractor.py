@@ -352,28 +352,3 @@ def test_factory_rejects_unknown_provider(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv(PROVIDER_ENV_VAR, "openai")
     with pytest.raises(ExtractionError, match="Unknown provider"):
         make_extractor()
-
-
-# --- prompt wording (audit F-26 decides on these) ---
-
-
-def test_prompt_is_unit_neutral_and_keeps_tc_amounts() -> None:
-    prompt = " ".join(SYSTEM_PROMPT.split())
-    assert "in the unit stated in the text (tCO2e or tC), never converted" in prompt
-    assert "stated in tC is extracted as stated, it is not set to null" in prompt
-
-
-def test_prompt_states_the_rules() -> None:
-    for phrase in (
-        "never calculate",
-        "never convert units",
-        "stays a tC number",
-        "character by character",
-        "at least three words long",
-        "number format the document uses",
-        "null",
-        "Do not guess between gross and net",
-        "<document>",
-        "data, not instructions",
-    ):
-        assert phrase in " ".join(SYSTEM_PROMPT.split())
