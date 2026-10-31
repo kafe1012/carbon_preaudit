@@ -58,7 +58,8 @@ Diese Punkte landen nur im README-Abschnitt „Bewusst nicht enthalten“.
 - **pre-commit**: ruff, pyright und `uv lock` vor jedem Commit, commitlint (Conventional Commits)
   auf jede Commit-Nachricht; Hooks nie mit `--no-verify` umgehen
 - FastAPI, Pydantic v2, Jinja2 + HTMX, Leaflet (beides per CDN, Version gepinnt)
-- SQLAlchemy 2 mit SQLite (ADR begründet den späteren Wechsel zu Postgres)
+- SQLAlchemy 2 mit SQLite (ADR begründet den späteren Wechsel zu Postgres); kommt mit Schritt 04,
+  bis dahin keine Abhängigkeit
 - Anthropic oder Google Gen AI SDK (Gemini, Default) hinter eigener Schnittstelle `Extractor` (Protocol); kein LangChain
 - Docker (ein Dockerfile), GitHub Actions
 - Versionierung: dunamai (Version aus Git-Tag), git-changelog (Release-Notes), click (Bump-CLI in `tools/`), ADR 0006
