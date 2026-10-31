@@ -1,5 +1,7 @@
-"""Input and result models of a calculation run. All models are frozen."""
+"""Input, result and pre-audit models. All models are frozen."""
 
+import math
+from enum import StrEnum
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -104,3 +106,70 @@ class CalculationRun(_Frozen):
     tco2e_buffer: float = Field(allow_inf_nan=False)
     tco2e_net: float = Field(allow_inf_nan=False)
     plots: tuple[PlotResult, ...]
+
+
+class ClaimedValue[T](_Frozen):
+    """A value as stated in the text (not converted) with its verbatim quote, or both None."""
+
+    value: T | None = None
+    quote: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def _both_or_neither(self) -> Self:
+        if (self.value is None) != (self.quote is None):
+            raise ValueError("value and quote must be both set or both None")
+        if isinstance(self.value, float) and not math.isfinite(self.value):
+            raise ValueError("value must be finite")
+        return self
+
+
+def _empty_float() -> ClaimedValue[float]:
+    return ClaimedValue[float]()
+
+
+def _empty_str() -> ClaimedValue[str]:
+    return ClaimedValue[str]()
+
+
+class ClaimedValues(_Frozen):
+    """Values a PDD text claims, as extracted by an Extractor."""
+
+    project_area_ha: ClaimedValue[float] = Field(default_factory=_empty_float)
+    tco2e_gross: ClaimedValue[float] = Field(default_factory=_empty_float)
+    tco2e_net: ClaimedValue[float] = Field(default_factory=_empty_float)
+    buffer_pct: ClaimedValue[float] = Field(default_factory=_empty_float)
+    methodology: ClaimedValue[str] = Field(default_factory=_empty_str)
+    extracted_by: str | None = None  # model that actually answered; None for fakes
+
+
+class Severity(StrEnum):
+    """Severity of a finding (UI: kritisch / wichtig / hinweis)."""
+
+    CRITICAL = "critical"
+    MAJOR = "major"
+    INFO = "info"
+
+
+class Diagnosis(StrEnum):
+    """Likely cause of a deviation in tonnes."""
+
+    TC_INSTEAD_OF_TCO2E = "tc_instead_of_tco2e"
+    GROSS_NET_SWAPPED = "gross_net_swapped"
+
+
+type FindingField = Literal[
+    "project_area_ha", "tco2e_gross", "tco2e_net", "buffer_pct", "methodology"
+]
+
+
+class Finding(_Frozen):
+    """One verifiable pre-audit result."""
+
+    field: FindingField
+    severity: Severity
+    claimed: Annotated[float, Field(allow_inf_nan=False)] | str | None
+    computed: Annotated[float, Field(allow_inf_nan=False)] | str
+    quote: str | None
+    deviation_rel: float | None = Field(default=None, allow_inf_nan=False)
+    diagnosis: Diagnosis | None = None
+    message: str

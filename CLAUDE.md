@@ -39,6 +39,8 @@ bevor ein Auditor die Abweichung findet.
   - Diagnosen: behauptet ≈ berechnet / (44/12) → „vermutlich tC statt tCO₂e“;
     behauptetes Netto ≈ berechnetes Brutto → „brutto/netto verwechselt“
   - Zitat nicht wörtlich im Text → Wert wird nicht verglichen, Befund „hinweis“
+  - Zitat nur Beleg an Wortgrenzen und mit mindestens 3 Wörtern, sonst nicht verglichen, Befund „hinweis“
+  - Wert nicht im Zitat (Zahlen normalisiert, deutsch und englisch) → nicht verglichen, Befund „hinweis“
   - Ergebnis: Liste von `Finding`; Details in `docs/plans/01-architecture.md`
 - Evals: Testfälle mit absichtlich eingebauten Fehlern, Metriken Precision/Recall
 - Eine Weboberfläche: Karte, Kennzahlen, markierter Text, Befundliste
