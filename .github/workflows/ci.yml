@@ -23,6 +23,21 @@ jobs:
       - run: uv run pre-commit run --all-files --show-diff-on-failure
       - run: uv run pytest
 
+  version:
+    name: version
+    runs-on: ubuntu-latest
+    env:
+      UV_LOCKED: "1"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.13.6"
+      - run: uv sync --all-groups --locked
+      - run: uv run bump verify-version "$(uv version --short)"
+
   docker:
     name: docker
     runs-on: ubuntu-latest

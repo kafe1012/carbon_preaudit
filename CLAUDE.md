@@ -59,6 +59,7 @@ Diese Punkte landen nur im README-Abschnitt „Bewusst nicht enthalten“.
 - SQLAlchemy 2 mit SQLite (ADR begründet den späteren Wechsel zu Postgres)
 - Anthropic Python SDK hinter eigener Schnittstelle `Extractor` (Protocol); kein LangChain
 - Docker (ein Dockerfile), GitHub Actions
+- Versionierung: dunamai (Version aus Git-Tag), git-changelog (Release-Notes), click (Bump-CLI in `tools/`), ADR 0006
 
 ## Befehle
 
@@ -94,6 +95,12 @@ Tests:
 uv run pytest
 ```
 
+Version setzen (`major`, `minor`, `patch` oder `-d`, nur auf Anweisung des Menschen, ADR 0006):
+
+```bash
+uv run bump version minor
+```
+
 Web-App lokal:
 
 ```bash
@@ -118,6 +125,7 @@ src/carbon_preaudit/
 evals/         # cases/*.yaml, scorer, results/
 examples/      # Beispiel-GeoJSON, -CSV, -PDD-Texte
 docs/          # plans/, adr/, reviews/
+tools/         # eigenes uv-Paket local_tools: Bump-Skript (`uv run bump`), nie deployt
 ```
 
 ## Code-Konventionen
@@ -149,6 +157,7 @@ docs/          # plans/, adr/, reviews/
 - Der PR verlinkt Plan-Schritt und Review-Datei (`.github/pull_request_template.md`).
 - Gemergt wird nur, wenn die Checks grün sind und der Mensch freigegeben hat. Danach wird der Branch gelöscht.
 - Kein Force-Push, kein `--no-verify`, keine Merge-Commits.
+- Version nur per Bump-Skript und nur auf Anweisung des Menschen, Releases startet nur der Mensch (ADR 0006).
 
 ## Definition of Done (pro Schritt)
 

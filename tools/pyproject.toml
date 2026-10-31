@@ -1,0 +1,20 @@
+[project]
+name = "local-tools"
+version = "0.0.1"
+description = "Local-only dev tooling (version bump), never deployed"
+requires-python = ">=3.15"
+dependencies = [
+    "click>=8.3.0",
+    "dunamai>=1.26.0",
+    "packaging>=26.0",
+]
+
+[project.scripts]
+bump = "local_tools.bump_script:cli"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
