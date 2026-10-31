@@ -242,7 +242,7 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
 ## Fortschritt
 
 - [x] 01 Architektur
-- [ ] 02 Projektgerüst
+- [x] 02 Projektgerüst
 - [ ] 03 Berechnungslauf
 - [ ] 04 Speicherung der Läufe
 - [ ] 05 Pre-Audit
