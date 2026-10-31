@@ -7,7 +7,7 @@ from pyproj import Geod
 from carbon_preaudit.calc.inputs import InvalidGeometryError
 from carbon_preaudit.domain.models import GeoJSONPolygon, Ring
 
-_M2_PER_HA = 10_000.0
+M2_PER_HA = 10_000.0
 _GEOD = Geod(ellps="WGS84")
 
 
@@ -25,7 +25,7 @@ def polygon_area_ha(polygon: GeoJSONPolygon) -> float:
     hole_m2 = [_ring_area_m2(h) for h in holes]
     if any(h >= outer_m2 for h in hole_m2):
         raise InvalidGeometryError("A hole must be smaller than the outer ring")
-    area_ha = (outer_m2 - sum(hole_m2)) / _M2_PER_HA
+    area_ha = (outer_m2 - sum(hole_m2)) / M2_PER_HA
     if not math.isfinite(area_ha) or area_ha <= 0:
         raise InvalidGeometryError(f"Polygon area must be finite and > 0 ha, got {area_ha}")
     return area_ha
