@@ -12,6 +12,11 @@ from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues
 from carbon_preaudit.preaudit.extractor import (
     DEFAULT_GEMINI_MODEL,
     DEFAULT_MODEL,
+    GEMINI_RETRY_ATTEMPTS,
+    GEMINI_RETRY_EXP_BASE,
+    GEMINI_RETRY_INITIAL_DELAY_S,
+    GEMINI_RETRY_JITTER_S,
+    GEMINI_RETRY_MAX_DELAY_S,
     MAX_TOKENS,
     MODEL_ENV_VAR,
     PROVIDER_ENV_VAR,
@@ -480,8 +485,12 @@ def test_gemini_client_is_built_with_retry_options(monkeypatch: pytest.MonkeyPat
     assert retry.initial_delay == 2.0  # seconds
     assert retry.max_delay == 10.0
     assert retry.jitter == 1.0
-    # Worst-case waiting: pauses 2, 4, 8 s plus up to 1 s jitter each stay below the 10 s cap.
-    assert 2.0 * 2.0**2 + 1.0 < 10.0
-    assert (2.0 + 4.0 + 8.0) + 3 * 1.0 == 17.0
+    # The documented worst-case waiting (17 s) follows from the constants: no pause hits the cap.
+    pauses = [
+        GEMINI_RETRY_INITIAL_DELAY_S * GEMINI_RETRY_EXP_BASE**i + GEMINI_RETRY_JITTER_S
+        for i in range(GEMINI_RETRY_ATTEMPTS - 1)
+    ]
+    assert max(pauses) < GEMINI_RETRY_MAX_DELAY_S
+    assert sum(pauses) == 17.0
     assert retry.http_status_codes == [429, 500, 502, 503, 504]
     assert retry.exp_base == 2.0
