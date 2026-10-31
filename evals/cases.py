@@ -38,7 +38,7 @@ class Case(_Frozen):
 def load_case(path: Path) -> Case:
     """Load one case file."""
     try:
-        raw: object = yaml.safe_load(path.read_text(encoding="utf-8"))  # pyright: ignore[reportAny]
+        raw: object = yaml.safe_load(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, yaml.YAMLError) as e:
         raise CaseError(f"{path.name}: cannot be read: {e}") from e
     try:
