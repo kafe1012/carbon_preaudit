@@ -13,7 +13,7 @@ from carbon_preaudit.domain.models import (
     Finding,
     Severity,
 )
-from carbon_preaudit.preaudit.compare import compare, number_candidates
+from carbon_preaudit.preaudit.compare import compare, number_candidates, number_format
 from carbon_preaudit.preaudit.extractor import FakeExtractor
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
@@ -530,3 +530,35 @@ def test_methodology_quote_needs_three_words() -> None:
     findings = present(compare(ClaimedValues(methodology=claim), RUN, "uses VM0042 here"))
     assert [f.severity for f in findings] == [Severity.INFO]
     assert "Zitat zu kurz als Beleg" in findings[0].message
+
+
+# --- number format of the text (audit F-20) ---
+
+
+@pytest.mark.parametrize(
+    ("text", "fmt"),
+    [
+        ("The area covers 100,0 ha and 8.364 tCO2e.", "de"),
+        ("The area covers 100.0 ha and 8,364 tCO2e.", "en"),
+        ("Removals of 8.364 tCO2e.", None),  # ambiguous only
+        ("Signed on 31.10.2026, removals of 8.364 tCO2e.", None),  # a date is no signal
+        ("Areas of 100,0 ha and 12.5 ha.", None),  # contradicting signals
+    ],
+)
+def test_number_format_of_text(text: str, fmt: str | None) -> None:
+    assert number_format(text) == fmt
+
+
+def test_misread_number_in_german_text_is_not_backed() -> None:
+    # First eval run, case clean-03: the model read "8.364" as 8.364 in a German formatted text.
+    text = "The project area covers 100,0 ha. The gross removals amount to 8.364 tCO2e."
+    claimed = only("tco2e_gross", 8.364, "The gross removals amount to 8.364 tCO2e.")
+    [finding] = present(compare(claimed, RUN, text))
+    assert finding.severity is Severity.INFO
+    assert "Wert nicht im Zitat belegt" in finding.message
+
+
+def test_number_read_in_the_text_format_is_backed() -> None:
+    text = "The project area covers 100,0 ha. The gross removals amount to 1.000 tCO2e."
+    claimed = only("tco2e_gross", 1000.0, "The gross removals amount to 1.000 tCO2e.")
+    assert present(compare(claimed, RUN, text)) == []

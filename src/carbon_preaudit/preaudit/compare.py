@@ -2,6 +2,7 @@
 
 import math
 import re
+from typing import Literal
 
 from carbon_preaudit.calc.params import (
     CO2_PER_C,
@@ -61,8 +62,35 @@ def format_de(x: float, digits: int) -> str:
     return s.replace(",", "\0").replace(".", ",").replace("\0", ".")
 
 
-def _readings(segment: str) -> set[float]:
-    """All plausible numeric readings of a digit group with ., or ' separators."""
+type NumberFormat = Literal["de", "en"]
+
+# Numbers only one format writes this way: a decimal part of 1-2 or 4+ digits, or both separators.
+# Neighbouring digits/separators are excluded so that dates like "31.10.2026" give no signal.
+_DE_SIGNAL = re.compile(
+    r"(?<![\d.,])\d+,(?:\d{1,2}|\d{4,})(?![.,]?\d)|(?<![\d.,])\d{1,3}(?:\.\d{3})+,\d"
+)
+_EN_SIGNAL = re.compile(
+    r"(?<![\d.,])\d+\.(?:\d{1,2}|\d{4,})(?![.,]?\d)|(?<![\d.,])\d{1,3}(?:,\d{3})+\.\d"
+)
+
+
+def number_format(text: str) -> NumberFormat | None:
+    """The number format of the whole text, or None if it gives no or contradicting signals.
+
+    "100,0 ha" marks German, "100.0 ha" English; "8.364" alone is ambiguous.
+    """
+    de, en = bool(_DE_SIGNAL.search(text)), bool(_EN_SIGNAL.search(text))
+    if de == en:
+        return None
+    return "de" if de else "en"
+
+
+def _readings(segment: str, fmt: NumberFormat | None = None) -> set[float]:
+    """Numeric readings of a digit group with ., or ' separators.
+
+    With an unknown format an ambiguous group ("8.364") counts under both readings; with a known
+    format only under that one.
+    """
     s = segment.replace("'", "")
     out: set[float] = set()
     dots, commas = s.count("."), s.count(",")
@@ -77,11 +105,16 @@ def _readings(segment: str) -> set[float]:
         out.add(float(s))
         return out
     head, *groups = s.split(sep)
-    if len(groups) == 1:
-        out.add(float(f"{head}.{groups[0]}"))  # decimal reading
-    if not head.startswith("0") and all(len(g) == 3 for g in groups):
-        out.add(float(head + "".join(groups)))  # thousands reading
-    return out
+    decimal_reading = float(f"{head}.{groups[0]}") if len(groups) == 1 else None
+    thousands_reading = (
+        float(head + "".join(groups))
+        if not head.startswith("0") and all(len(g) == 3 for g in groups)
+        else None
+    )
+    if decimal_reading is not None and thousands_reading is not None and fmt is not None:
+        thousands_sep = "." if fmt == "de" else ","
+        return {thousands_reading if sep == thousands_sep else decimal_reading}
+    return {r for r in (decimal_reading, thousands_reading) if r is not None}
 
 
 def _number_groups(quote: str) -> list[tuple[int, int, str]]:
@@ -114,8 +147,8 @@ def _number_groups(quote: str) -> list[tuple[int, int, str]]:
     return out
 
 
-def number_candidates(quote: str) -> set[float]:
-    """All numbers in the quote; ambiguous ones count under German and English reading.
+def number_candidates(quote: str, fmt: NumberFormat | None = None) -> set[float]:
+    """All numbers in the quote; ambiguous ones count under both readings unless `fmt` is known.
 
     Behaviour worth knowing:
     - A sign directly before a number is kept ("-5 %" is -5), unless the sign follows a letter
@@ -130,7 +163,7 @@ def number_candidates(quote: str) -> set[float]:
             continue
         if end < len(quote) and _LETTER.match(quote[end]):
             continue
-        readings = _readings(text)
+        readings = _readings(text, fmt)
         negative = (
             start > 0
             and quote[start - 1] in _MINUS_SIGNS
@@ -140,9 +173,9 @@ def number_candidates(quote: str) -> set[float]:
     return out
 
 
-def _value_in_quote(value: float, quote: str) -> bool:
+def _value_in_quote(value: float, quote: str, fmt: NumberFormat | None) -> bool:
     return any(
-        math.isclose(value, c, rel_tol=_QUOTE_VALUE_REL_TOL) for c in number_candidates(quote)
+        math.isclose(value, c, rel_tol=_QUOTE_VALUE_REL_TOL) for c in number_candidates(quote, fmt)
     )
 
 
@@ -305,7 +338,7 @@ def _check_numeric_field(
         return _info(field, value, k, quote, f"{label}: Zitat nicht im Text gefunden.")
     if not _quote_is_evidence(quote, text):
         return _info(field, value, k, quote, f"{label}: Zitat zu kurz als Beleg.")
-    if not _value_in_quote(value, quote):
+    if not _value_in_quote(value, quote, number_format(text)):
         return _info(field, value, k, quote, f"{label}: Wert nicht im Zitat belegt.")
     return _check_number(field, value, quote, k, run)
 
