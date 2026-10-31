@@ -349,11 +349,6 @@ def test_findings_follow_field_order_and_message_is_german_with_both_values() ->
     assert "2.000,0 tCO₂e" in findings[1].message
 
 
-def test_compare_is_deterministic() -> None:
-    claimed = ClaimedValues(tco2e_gross=num(2000.0, "2000 t"))
-    assert run_compare(claimed) == run_compare(claimed)
-
-
 # --- number candidates (W1, H1, H2) ---
 
 

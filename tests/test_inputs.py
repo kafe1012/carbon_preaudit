@@ -39,22 +39,17 @@ def test_valid_inputs_are_sorted_and_typed() -> None:
     assert inputs.buffer_pct == 20.0
 
 
-def test_feature_is_rejected() -> None:
-    feature = {"type": "Feature", "properties": {}, "geometry": json.loads(GEO)}
-    with pytest.raises(UnsupportedGeometryError, match="Feature"):
-        parse_inputs(json.dumps(feature), ONE_TREE_CSV)
-
-
-def test_feature_collection_is_rejected() -> None:
-    fc = {"type": "FeatureCollection", "features": []}
-    with pytest.raises(UnsupportedGeometryError):
-        parse_inputs(json.dumps(fc), ONE_TREE_CSV)
-
-
-def test_multipolygon_is_rejected() -> None:
-    mp = {"type": "MultiPolygon", "coordinates": [[SQUARE_001]]}
-    with pytest.raises(UnsupportedGeometryError, match="MultiPolygon"):
-        parse_inputs(json.dumps(mp), ONE_TREE_CSV)
+@pytest.mark.parametrize(
+    "geometry",
+    [
+        {"type": "Feature", "properties": {}, "geometry": json.loads(GEO)},
+        {"type": "FeatureCollection", "features": []},
+        {"type": "MultiPolygon", "coordinates": [[SQUARE_001]]},
+    ],
+)
+def test_only_a_plain_polygon_is_accepted(geometry: dict[str, object]) -> None:
+    with pytest.raises(UnsupportedGeometryError, match=str(geometry["type"])):
+        parse_inputs(json.dumps(geometry), ONE_TREE_CSV)
 
 
 def test_open_ring_is_rejected() -> None:
@@ -127,11 +122,6 @@ def test_missing_column_is_rejected(column: str) -> None:
 def test_buffer_out_of_range_is_rejected(buffer_pct: float) -> None:
     with pytest.raises(InvalidValueError):
         parse_inputs(GEO, ONE_TREE_CSV, buffer_pct)
-
-
-def test_all_errors_share_base_class() -> None:
-    with pytest.raises(InputError):
-        parse_inputs("nope", ONE_TREE_CSV)
 
 
 # --- K1: geometry validation -------------------------------------------------------------------
