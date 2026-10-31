@@ -4,16 +4,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from carbon_preaudit.domain.models import Finding, FindingField
+from carbon_preaudit.preaudit.compare import FIELD_ORDER as FIELDS
 
 from .cases import ExpectedFinding
-
-FIELDS: tuple[FindingField, ...] = (
-    "project_area_ha",
-    "tco2e_gross",
-    "tco2e_net",
-    "buffer_pct",
-    "methodology",
-)
 
 
 @dataclass(frozen=True)

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from markupsafe import Markup
 
-from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues, Finding, FindingField
+from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues, Finding
 from carbon_preaudit.preaudit.compare import (
     FIELD_ORDER,
     LABELS,
@@ -35,17 +35,11 @@ class Mark:
 
 def build_marks(claimed: ClaimedValues, findings: Sequence[Finding]) -> list[Mark]:
     """One mark per quote that occurs in the text; level from the finding of its field."""
-    claims: dict[FindingField, ClaimedValue[float] | ClaimedValue[str]] = {
-        "project_area_ha": claimed.project_area_ha,
-        "tco2e_gross": claimed.tco2e_gross,
-        "tco2e_net": claimed.tco2e_net,
-        "buffer_pct": claimed.buffer_pct,
-        "methodology": claimed.methodology,
-    }
     levels = {f.field: f.severity.value for f in findings}
     marks: list[Mark] = []
     for field in FIELD_ORDER:
-        quote = claims[field].quote
+        claim: ClaimedValue[float] | ClaimedValue[str] = getattr(claimed, field)
+        quote = claim.quote
         if quote is not None:
             marks.append(Mark(quote, levels.get(field, OK_LEVEL), LABELS[field]))
     return marks
