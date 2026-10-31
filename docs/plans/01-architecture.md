@@ -283,7 +283,8 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
 ## Offene Fragen
 
 - Ob die Plots innerhalb des Polygons liegen oder sich überlappen, wird nicht geprüft. Die CSV hat keine
-  Koordinaten, und ohne shapely gibt es keine Geometrie-Operationen. Kommt nach „Bewusst nicht enthalten“.
+  Koordinaten, und ohne shapely gibt es keine Geometrie-Operationen. Steht in der README unter „Bewusst nicht
+  enthalten“.
 
 - Baumlose Plots sind ausgeschlossen. Sie bräuchten ein anderes CSV-Format (eine Zeile ohne Baum) und würden
   tCO₂e/ha senken, weil ein gemessener leerer Plot mit 0 tCO₂e in den Nenner gehörte. `Plot(trees=())` bleibt

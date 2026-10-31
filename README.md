@@ -116,3 +116,13 @@ cp .env.example .env
 ## IDE
 
 Als Interpreter `.venv/bin/python` wählen und als Test-Runner pytest.
+
+## Bewusst nicht enthalten
+
+- Methodologiekonforme Berechnung nach VM0047, Unsicherheitsabzüge, Leakage
+- PDD-Generierung, RAG über Methodologien, Satellitendaten
+- Mandanten, Login, Zugriffsschutz; Postgres/PostGIS (ADR 0003)
+- Speicherung der Läufe und Befunde (Schritt 04 zurückgestellt)
+- Prüfung, ob die Plots im Polygon liegen oder sich überlappen: Die CSV hat keine Koordinaten.
+- Plots ohne Bäume: Das CSV-Format kennt keine Zeile ohne Baum.
+- Schnitte zwischen verschiedenen Ringen eines Polygons; geprüft wird nur jeder Ring für sich.
