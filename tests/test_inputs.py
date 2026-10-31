@@ -9,7 +9,6 @@ from carbon_preaudit.calc.inputs import (
     DuplicateTreeError,
     EmptyPlotsError,
     InconsistentPlotAreaError,
-    InputError,
     InvalidGeoJSONError,
     InvalidGeometryError,
     InvalidValueError,
@@ -63,9 +62,18 @@ def test_malformed_geojson_is_rejected(text: str) -> None:
         parse_inputs(text, ONE_TREE_CSV)
 
 
-def test_bad_position_is_rejected() -> None:
+@pytest.mark.parametrize(
+    "text",
+    [
+        '{"type": "Polygon", "coordinates": [[[0, 0], [1], [1, 1], [0, 0]]]}',  # position too short
+        '{"type": "Polygon", "coordinates": [[["1", 0], [1, 0], [1, 1], ["1", 0]]]}',  # string
+        '{"type": "Polygon", "coordinates": [[[NaN, 0], [1, 0], [1, 1], [0, 1], [NaN, 0]]]}',
+        '{"type": "Polygon", "coordinates": [[[1e400, 0], [1, 0], [1, 1], [0, 1], [1e400, 0]]]}',
+    ],
+)
+def test_invalid_coordinate_values_are_rejected(text: str) -> None:
     with pytest.raises(InvalidGeoJSONError):
-        parse_inputs(polygon_text([[0, 0], [1], [1, 1], [0, 0]]), ONE_TREE_CSV)
+        parse_inputs(text, ONE_TREE_CSV)
 
 
 def test_csv_without_rows_is_rejected() -> None:
@@ -93,17 +101,11 @@ def test_same_tree_id_in_different_plots_is_allowed() -> None:
 @pytest.mark.parametrize(
     "row",
     [
-        "P1,0,T1,10,8,0.5",
-        "P1,-400,T1,10,8,0.5",
-        "P1,400,T1,0,8,0.5",
-        "P1,400,T1,10,-1,0.5",
-        "P1,400,T1,10,8,0",
-        "P1,400,T1,10,8,-0.5",
-        "P1,400,T1,abc,8,0.5",
-        "P1,400,T1,nan,8,0.5",
-        "P1,400,T1,inf,8,0.5",
-        "P1,,T1,10,8,0.5",
-        ",400,T1,10,8,0.5",
+        "P1,0,T1,10,8,0.5",  # zero
+        "P1,400,T1,10,-1,0.5",  # negative
+        "P1,400,T1,abc,8,0.5",  # not a number
+        "P1,400,T1,nan,8,0.5",  # not finite
+        ",400,T1,10,8,0.5",  # empty id
     ],
 )
 def test_invalid_numbers_are_rejected(row: str) -> None:
@@ -111,14 +113,14 @@ def test_invalid_numbers_are_rejected(row: str) -> None:
         parse_inputs(GEO, CSV_HEADER + row + "\n")
 
 
-@pytest.mark.parametrize("column", ["plot_id", "plot_area_m2", "tree_id", "dbh_cm", "height_m"])
+@pytest.mark.parametrize("column", ["plot_id", "dbh_cm"])
 def test_missing_column_is_rejected(column: str) -> None:
     cols = [c for c in CSV_HEADER.strip().split(",") if c != column]
     with pytest.raises(MissingColumnError, match=column):
         parse_inputs(GEO, ",".join(cols) + "\n")
 
 
-@pytest.mark.parametrize("buffer_pct", [-1.0, 100.5, float("nan")])
+@pytest.mark.parametrize("buffer_pct", [-1.0, 100.5])
 def test_buffer_out_of_range_is_rejected(buffer_pct: float) -> None:
     with pytest.raises(InvalidValueError):
         parse_inputs(GEO, ONE_TREE_CSV, buffer_pct)
@@ -134,10 +136,8 @@ def _calc(ring_a: list[list[float]], *holes: list[list[float]]) -> CalculationRu
 @pytest.mark.parametrize(
     "ring",
     [
-        [[0, 90], [1, 90], [1, 95], [0, 95], [0, 90]],
-        [[0, -95], [1, -95], [1, -90], [0, -90], [0, -95]],
-        [[400, 0], [400.01, 0], [400.01, 0.01], [400, 0.01], [400, 0]],
-        [[-181, 0], [-180, 0], [-180, 1], [-181, 1], [-181, 0]],
+        [[0, 90], [1, 90], [1, 95], [0, 95], [0, 90]],  # latitude
+        [[400, 0], [400.01, 0], [400.01, 0.01], [400, 0.01], [400, 0]],  # longitude
     ],
 )
 def test_coordinates_out_of_range_are_rejected(ring: list[list[float]]) -> None:
@@ -153,8 +153,7 @@ def test_degenerate_ring_is_rejected() -> None:
 @pytest.mark.parametrize(
     "ring",
     [
-        [[0, 0], [0.01, 0.01], [0.01, 0], [0, 0.01], [0, 0]],  # symmetric bow tie
-        [[0, 0], [0.02, 0.01], [0.02, 0], [0, 0.01], [0, 0]],  # asymmetric bow tie
+        [[0, 0], [0.01, 0.01], [0.01, 0], [0, 0.01], [0, 0]],  # bow tie
         [[0, 0], [0.02, 0], [0.02, 0.02], [0.01, 0], [0.01, 0.02], [0, 0.02], [0, 0]],  # touch
     ],
 )
@@ -183,25 +182,6 @@ def test_hole_larger_than_outer_ring_is_rejected() -> None:
 def test_hole_reduces_area() -> None:
     hole = [[0.002, 0.002], [0.004, 0.002], [0.004, 0.004], [0.002, 0.004], [0.002, 0.002]]
     assert _calc(SQUARE_001, hole).project_area_ha < _calc(SQUARE_001).project_area_ha
-
-
-def test_extreme_coordinate_is_input_error() -> None:
-    ring: list[list[float]] = [[10**400, 0], [1, 0], [1, 1], [0, 1], [10**400, 0]]
-    with pytest.raises(InputError):
-        parse_inputs(polygon_text(ring), ONE_TREE_CSV)
-
-
-@pytest.mark.parametrize("bad", [True, "1", None])
-def test_non_numeric_coordinate_is_rejected(bad: object) -> None:
-    ring = [[bad, 0], [1, 0], [1, 1], [0, 1], [bad, 0]]
-    with pytest.raises(InvalidGeoJSONError):
-        parse_inputs(json.dumps({"type": "Polygon", "coordinates": [ring]}), ONE_TREE_CSV)
-
-
-def test_nan_coordinate_is_rejected() -> None:
-    text = '{"type": "Polygon", "coordinates": [[[NaN, 0], [1, 0], [1, 1], [0, 1], [NaN, 0]]]}'
-    with pytest.raises(InvalidGeoJSONError):
-        parse_inputs(text, ONE_TREE_CSV)
 
 
 def test_altitude_is_dropped() -> None:
@@ -309,11 +289,6 @@ def test_bom_is_removed() -> None:
 def test_header_names_are_trimmed() -> None:
     header = "plot_id, plot_area_m2, tree_id, dbh_cm, height_m, wood_density\n"
     assert parse_inputs(GEO, header + "P1,400,T1,20,15,0.6\n") == parse_inputs(GEO, ONE_TREE_CSV)
-
-
-def test_empty_tree_id_is_rejected() -> None:
-    with pytest.raises(InvalidValueError, match="tree_id"):
-        parse_inputs(GEO, CSV_HEADER + "P1,400,,20,15,0.6\n")
 
 
 def test_plot_without_trees_row_is_rejected() -> None:

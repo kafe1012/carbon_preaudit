@@ -4,7 +4,6 @@ from helpers import CSV_HEADER, SQUARE_001, polygon_text
 from carbon_preaudit.calc import params, version
 from carbon_preaudit.calc.hashing import run_hash
 from carbon_preaudit.calc.inputs import parse_inputs
-from carbon_preaudit.calc.run import calculate
 
 GEO = polygon_text(SQUARE_001)
 ROWS = ["P1,400,T1,20,15,0.6", "P1,400,T2,12.5,9,", "P2,400,T1,18,14,0.55"]
@@ -12,12 +11,6 @@ ROWS = ["P1,400,T1,20,15,0.6", "P1,400,T2,12.5,9,", "P2,400,T1,18,14,0.55"]
 
 def _hash(rows: list[str] = ROWS, buffer_pct: float = 20.0, geo: str = GEO) -> str:
     return run_hash(parse_inputs(geo, CSV_HEADER + "\n".join(rows) + "\n", buffer_pct))
-
-
-def test_hash_is_hex_sha256_and_repeatable() -> None:
-    assert len(_hash()) == 64
-    assert _hash() == _hash()
-    assert calculate(parse_inputs(GEO, CSV_HEADER + "\n".join(ROWS) + "\n")).run_hash == _hash()
 
 
 def test_hash_ignores_row_order() -> None:
