@@ -121,8 +121,8 @@ uv run --env-file .env python -m evals
 src/carbon_preaudit/
   domain/      # Pydantic-Modelle: Plot, Tree, CalculationRun, ClaimedValues, Finding
   calc/        # Fläche, Allometrie, Hash, params.py
-  preaudit/    # extractor.py (Protocol + Anthropic + Fake), compare.py
-  store/       # Persistenz der Läufe
+  preaudit/    # extractor.py (Protocol + Gemini + Anthropic + Fake), compare.py
+  store/       # Persistenz der Läufe (geplant, Schritt 04 zurückgestellt; noch nicht angelegt)
   web/         # FastAPI-App, Templates
 evals/         # cases/*.yaml, scorer, results/
 examples/      # Beispiel-GeoJSON, -CSV, -PDD-Texte
