@@ -51,6 +51,17 @@ Tests:
 uv run pytest
 ```
 
+## Versionierung
+
+Die Version setzt nur das Bump-Skript, ausgehend vom letzten Git-Tag. Statt `minor` geht auch `patch`
+(Default), `major` oder das Flag `-d` für eine Dev-Version:
+
+```bash
+uv run bump version minor
+```
+
+Ablauf und Regeln: [ADR 0006](docs/adr/0006-versioning-via-git-tags.md).
+
 ## API-Key
 
 Die Evals rufen die Anthropic API auf und brauchen einen Schlüssel. Tests und Berechnung laufen ohne ihn.
