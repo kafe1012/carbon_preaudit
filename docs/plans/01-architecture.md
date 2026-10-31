@@ -20,7 +20,7 @@ belegte Befunde. Das LLM extrahiert nur, bewertet wird deterministisch in Python
 | `calc/allometry.py` | `agb_kg()`, `tco2e_from_agb_kg()` | nein |
 | `calc/hashing.py` | Kanonisches JSON, `run_hash()` | nein |
 | `calc/run.py` | `calculate(inputs: ProjectInputs) -> CalculationRun` | nein |
-| `preaudit/extractor.py` | `Extractor` (Protocol), `AnthropicExtractor`, `FakeExtractor` | nur `AnthropicExtractor` |
+| `preaudit/extractor.py` | `Extractor` (Protocol), `AnthropicExtractor`, `GeminiExtractor`, `FakeExtractor`, `make_extractor()` | nur die beiden LLM-Extractors |
 | `preaudit/compare.py` | `compare(claimed, run, text) -> list[Finding]` | nein |
 | `store/` | Persistenz der Läufe, SQLAlchemy 2 + SQLite (ADR 0003) | ja |
 | `web/` | FastAPI, Jinja2 + HTMX, Leaflet | ja |
@@ -190,6 +190,18 @@ SDK-Fehler (`anthropic.AnthropicError`) werden zu `ExtractionError`. `fallbacks=
 Ablehnung kann serverseitig ein anderes Modell antworten. `ClaimedValues.extracted_by` hält fest, welches
 Modell tatsächlich geantwortet hat (`response.model`). Die Feldbeschreibung der Tonnen im Prompt ist
 einheitenneutral (tCO2e oder tC), eine Angabe in tC wird extrahiert und nicht auf `null` gesetzt.
+
+Anbieterwahl (ADR 0008): `make_extractor()` liest `CARBON_PREAUDIT_PROVIDER` (`gemini` als Default, oder
+`anthropic`; sonst `ExtractionError`). `GeminiExtractor` nutzt denselben Prompt, dasselbe `<document>`-Wrapping
+und dasselbe `ExtractionOutput`. Aufruf: `client.models.generate_content` mit `system_instruction`,
+`response_mime_type="application/json"` und `response_json_schema`. Der Key kommt aus `GEMINI_API_KEY` (oder
+`GOOGLE_API_KEY`, das Vorrang hat). Geprüft werden `prompt_feedback.block_reason`, fehlende Kandidaten und `finish_reason`
+(`MAX_TOKENS` und jeder Wert außer `STOP`), danach leere Antwort und Schema. Default-Modell `gemini-3.8-flash`,
+überschreibbar über `CARBON_PREAUDIT_MODEL`, das zum gewählten Anbieter passen muss (keine Prüfung im Code);
+`extracted_by` ist `response.model_version`, sonst der angefragte Modellname. Thinking ist auf `LOW` gesetzt,
+damit es nicht zu `MAX_TOKENS`-Abbrüchen kommt. Netzwerkfehler (`httpx2.HTTPError`) und
+`UnknownApiResponseError` werden zu `ExtractionError`. Der
+Refusal-Fallback gilt nur für Anthropic.
 
 ```mermaid
 flowchart LR

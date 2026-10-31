@@ -59,7 +59,7 @@ Diese Punkte landen nur im README-Abschnitt „Bewusst nicht enthalten“.
   auf jede Commit-Nachricht; Hooks nie mit `--no-verify` umgehen
 - FastAPI, Pydantic v2, Jinja2 + HTMX, Leaflet (beides per CDN, Version gepinnt)
 - SQLAlchemy 2 mit SQLite (ADR begründet den späteren Wechsel zu Postgres)
-- Anthropic Python SDK hinter eigener Schnittstelle `Extractor` (Protocol); kein LangChain
+- Anthropic oder Google Gen AI SDK (Gemini, Default) hinter eigener Schnittstelle `Extractor` (Protocol); kein LangChain
 - Docker (ein Dockerfile), GitHub Actions
 - Versionierung: dunamai (Version aus Git-Tag), git-changelog (Release-Notes), click (Bump-CLI in `tools/`), ADR 0006
 
@@ -109,7 +109,7 @@ Web-App lokal:
 uv run uvicorn carbon_preaudit.web.app:app --reload
 ```
 
-Evals (braucht `ANTHROPIC_API_KEY` in `.env`):
+Evals (braucht den Key des gewählten Anbieters in `.env`, `GEMINI_API_KEY` oder `ANTHROPIC_API_KEY`):
 
 ```bash
 uv run --env-file .env python -m evals

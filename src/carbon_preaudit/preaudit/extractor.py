@@ -5,13 +5,21 @@ import re
 from typing import Protocol
 
 import anthropic
+import httpx2
+from google import genai
+from google.genai import errors as genai_errors
+from google.genai import types as genai_types
 from pydantic import BaseModel, ValidationError
 
 from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues
 
 MODEL_ENV_VAR = "CARBON_PREAUDIT_MODEL"
-DEFAULT_MODEL = "claude-opus-5-5"
-# Thinking is always on for this model and its tokens count towards max_tokens.
+PROVIDER_ENV_VAR = "CARBON_PREAUDIT_PROVIDER"
+DEFAULT_PROVIDER = "gemini"
+DEFAULT_MODEL = "claude-opus-5-5"  # Anthropic
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+# Thinking tokens count towards the output limit for both providers: Claude always thinks, and
+# Gemini gets a low thinking level (see GeminiExtractor), so 8000 leaves room for the JSON answer.
 MAX_TOKENS = 8000
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
@@ -145,3 +153,75 @@ class AnthropicExtractor:
         except ValidationError as e:
             raise ExtractionError(f"Model output does not match the schema: {e}") from e
         return claimed.model_copy(update={"extracted_by": response.model})
+
+
+class GeminiExtractor:
+    """Extractor backed by the Gemini API (Google AI Studio key, one-shot JSON output)."""
+
+    def __init__(self, client: genai.Client | None = None, model: str | None = None) -> None:
+        if client is None:
+            try:
+                # Reads GOOGLE_API_KEY or GEMINI_API_KEY; raises ValueError without a key.
+                # GOOGLE_API_KEY takes precedence over GEMINI_API_KEY (the SDK only logs a warning).
+                client = genai.Client(vertexai=False)
+            except ValueError as e:
+                raise ExtractionError(f"Gemini client could not be created: {e}") from e
+        self._client = client
+        self._model = model or os.environ.get(MODEL_ENV_VAR) or DEFAULT_GEMINI_MODEL
+
+    def extract(self, text: str) -> ClaimedValues:
+        try:
+            # The SDK's own signature contains an unknown type (`contents`), not our code.
+            response = self._client.models.generate_content(  # pyright: ignore[reportUnknownMemberType]
+                model=self._model,
+                contents=_document(text),
+                config=genai_types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    response_mime_type="application/json",
+                    response_json_schema=ExtractionOutput.model_json_schema(),
+                    max_output_tokens=MAX_TOKENS,
+                    # LOW, not MINIMAL: MINIMAL is not supported by every Gemini 3 model.
+                    thinking_config=genai_types.ThinkingConfig(
+                        thinking_level=genai_types.ThinkingLevel.LOW
+                    ),
+                ),
+            )
+        except genai_errors.APIError as e:
+            raise ExtractionError(f"Gemini API call failed: {e}") from e
+        except genai_errors.UnknownApiResponseError as e:
+            raise ExtractionError(f"Gemini returned an unreadable response: {e}") from e
+        # The SDK uses httpx2 for its HTTP calls; connect, read and timeout errors end up here.
+        except httpx2.HTTPError as e:
+            raise ExtractionError(f"Gemini network call failed: {e}") from e
+        # Blocking and cut-off are checked before the text is parsed, so the cause is reported.
+        feedback = response.prompt_feedback
+        if feedback is not None and feedback.block_reason is not None:
+            raise ExtractionError(f"The prompt was blocked (block_reason={feedback.block_reason})")
+        if not response.candidates:
+            raise ExtractionError("The model returned no candidates")
+        finish_reason = response.candidates[0].finish_reason
+        if finish_reason == genai_types.FinishReason.MAX_TOKENS:
+            raise ExtractionError("The model output was cut off (finish_reason=MAX_TOKENS)")
+        if finish_reason not in (None, genai_types.FinishReason.STOP):
+            raise ExtractionError(
+                f"The model did not finish normally (finish_reason={finish_reason})"
+            )
+        if not response.text:
+            raise ExtractionError("The model returned an empty answer")
+        try:
+            claimed = ExtractionOutput.model_validate_json(response.text).to_claimed_values()
+        except ValidationError as e:
+            raise ExtractionError(f"Model output does not match the schema: {e}") from e
+        return claimed.model_copy(update={"extracted_by": response.model_version or self._model})
+
+
+def make_extractor() -> Extractor:
+    """Build the extractor chosen by CARBON_PREAUDIT_PROVIDER (gemini by default)."""
+    provider = os.environ.get(PROVIDER_ENV_VAR) or DEFAULT_PROVIDER
+    if provider == "gemini":
+        return GeminiExtractor()
+    if provider == "anthropic":
+        return AnthropicExtractor()
+    raise ExtractionError(
+        f"Unknown provider {provider!r} in {PROVIDER_ENV_VAR}; use 'gemini' or 'anthropic'"
+    )

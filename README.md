@@ -100,9 +100,12 @@ Ablauf und Regeln: [ADR 0006](docs/adr/0006-versioning-via-git-tags.md).
 
 ## API-Key
 
-Die Evals rufen die Anthropic API auf und brauchen einen Schlüssel. Tests und Berechnung laufen ohne ihn.
+Die Extraktion und die Evals rufen ein LLM auf und brauchen einen Schlüssel. Tests und Berechnung laufen ohne ihn.
+Für Gemini (Default) genügt ein Key aus Google AI Studio in `GEMINI_API_KEY`. Für Anthropic setzt man
+`CARBON_PREAUDIT_PROVIDER=anthropic` und `ANTHROPIC_API_KEY` (ADR 0008). Ist zusätzlich `GOOGLE_API_KEY`
+gesetzt (etwa in der Shell), hat dieser Vorrang vor `GEMINI_API_KEY`.
 
-Vorlage kopieren und danach `ANTHROPIC_API_KEY` in `.env` eintragen:
+Vorlage kopieren und danach den Schlüssel in `.env` eintragen:
 
 ```bash
 cp .env.example .env
