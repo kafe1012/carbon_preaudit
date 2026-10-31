@@ -31,3 +31,10 @@ Finding-ID freigegeben wird.
 | F-22 | Neuer LLM-Client pro Anfrage | niedrig | | |
 | F-23 | Mehrfache Git-Aufrufe in der Versionsprüfung | niedrig | | |
 | F-24 | `sqlalchemy` deklariert, aber nicht verwendet | niedrig | | |
+| F-25 | Extractor-Tests je Anbieter doppelt geschrieben | mittel | | |
+| F-26 | Tests prüfen den Wortlaut des Prompts | niedrig | | |
+| F-27 | Zitat- und Belegregeln in drei Testdateien | niedrig | | |
+| F-28 | Parserfehler über die Weboberfläche erneut getestet | niedrig | | |
+| F-29 | Pydantic-Verhalten Feld für Feld getestet | niedrig | | |
+| F-30 | Beispieldaten an fünf Stellen end-to-end geprüft | niedrig | | |
+| F-31 | Tests ohne eigene Aussage | niedrig | | |

@@ -25,6 +25,17 @@ Stand: Branch `audit/llm-patterns`, abgezweigt von `master` bei `2b61939`, 2026-
 
 Alle Prüfungen waren vor dem Audit grün.
 
+## Testumfang
+
+| Messgröße | Wert |
+|---|---|
+| Gesammelte Tests | 332 |
+| Testfunktionen | 225 (Rest durch Parametrisierung) |
+| Zeilen Tests (`tests/*.py`) | 2 785 |
+| Zeilen Code (`src`, `evals`, `tools`) | 2 225 |
+| Verhältnis Test- zu Codezeilen | 1,25 : 1 |
+| Laufzeit | rund 33 s, davon rund 26 s `tests/test_bump_script.py` |
+
 ## Analyse-Tools
 
 | Tool | Vorhanden | Verwendet |

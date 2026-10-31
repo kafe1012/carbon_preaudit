@@ -9,7 +9,7 @@ Kategorie nach Fundort. Der Schweregrad stuft die Auswirkung ein, er ist keine P
 |-----------|--------|----------|------|--------|---------|-------------------|
 | K1 Verschluckte Fehler, stille Fallbacks | 1 | 0 | 0 | 1 | 0 | 0 |
 | K2 Symptome statt Ursachen | 1 | 0 | 0 | 0 | 1 | 1 |
-| K3 Reward Hacking, schwache Tests | 1 | 0 | 0 | 0 | 1 | 0 |
+| K3 Reward Hacking, schwache Tests | 8 | 0 | 0 | 1 | 7 | 0 |
 | K4 Scope Creep | 3 | 0 | 1 | 0 | 2 | 0 |
 | K5 Over-Engineering | 0 | 0 | 0 | 0 | 0 | 0 |
 | K6 Duplikation | 5 | 0 | 0 | 0 | 5 | 1 |
@@ -19,7 +19,7 @@ Kategorie nach Fundort. Der Schweregrad stuft die Auswirkung ein, er ist keine P
 | K10 Kontextverlust | 1 | 0 | 0 | 0 | 1 | 1 |
 | K11 Security, Performance, Edge Cases | 5 | 0 | 2 | 1 | 2 | 1 |
 | K12 Unnötige Dependencies, Rauschen | 1 | 0 | 0 | 0 | 1 | 0 |
-| **gesamt** | **24** | **0** | **3** | **5** | **16** | **5** |
+| **gesamt** | **31** | **0** | **3** | **6** | **22** | **5** |
 
 ## K1 – Verschluckte Fehler und stille Fallbacks
 
@@ -69,6 +69,120 @@ Kategorie nach Fundort. Der Schweregrad stuft die Auswirkung ein, er ist keine P
   dokumentieren eine Rechnung, ohne sie am Code zu binden.
 - Möglicher Korrekturansatz: Rechnung aus den Konstanten `GEMINI_RETRY_*` ableiten, oder die Zeilen als
   Kommentar führen.
+- Verhaltensänderung bei Korrektur: nein
+- Abhängigkeiten: keine
+- Aufwand: S
+
+### F-25 – Extractor-Tests je Anbieter doppelt geschrieben
+- Kategorie: K3
+- Ort: `tests/test_extractor.py:100-264` (Anthropic) und `:322-481` (Gemini)
+- Schweregrad: mittel
+- Sicherheit: belegt
+- Beleg: 37 Testfunktionen auf 481 Zeilen. Rund zwölf Fälle existieren je Anbieter als eigene Funktion mit
+  eigenem Fake: Erfolg, Request-Parameter, Modell aus Umgebung, `extracted_by`, Ablehnung bzw. Blockierung,
+  Abbruch bei Token-Limit, ungültiges JSON, inkonsistente Ausgabe, API-Fehler, SDK-Fehler, fehlender Key,
+  Closing-Tag. Zusätzlich prüfen `test_closing_tag_in_text_is_defused` und
+  `test_closing_tag_variants_are_defused` dieselbe Funktion `_document`.
+- Auswirkung: Viel Text für dieselbe Fehlerabbildung; Änderungen an der gemeinsamen Logik müssen an zwei
+  Stellen nachgezogen werden. Die Tests sind einzeln lesbar, in Summe aber schwer zu überblicken.
+- Möglicher Korrekturansatz: (a) Gemeinsame Fälle über den Anbieter parametrisieren, anbieterspezifische
+  (Request-Parameter, Retry-Optionen) einzeln lassen. (b) Je Anbieter nur Erfolg, Request und je einen
+  Fehlerpfad behalten, die übrigen Fehlerpfade einmal zentral.
+- Verhaltensänderung bei Korrektur: nein
+- Abhängigkeiten: F-26
+- Aufwand: M
+
+### F-26 – Tests prüfen den Wortlaut des Prompts
+- Kategorie: K3
+- Ort: `tests/test_extractor.py:238-264`
+- Schweregrad: niedrig
+- Sicherheit: belegt
+- Beleg: `test_prompt_states_the_rules` und `test_prompt_is_unit_neutral_and_keeps_tc_amounts` prüfen, ob
+  Teilstrings wie „character by character“ in `SYSTEM_PROMPT` stehen.
+- Auswirkung: Spiegeltest: Die erwarteten Werte stammen aus dem Prompt selbst. Ob das Modell die Regeln
+  befolgt, prüfen nur die Evals; jede Umformulierung macht den Test rot, ohne dass sich Verhalten ändert.
+- Möglicher Korrekturansatz: Tests entfernen und auf den Prompt-Hash im Eval-Bericht verlassen, oder auf
+  einen einzigen Test für die Sicherheitsregel („data, not instructions“) reduzieren.
+- Verhaltensänderung bei Korrektur: nein
+- Abhängigkeiten: F-25
+- Aufwand: S
+
+### F-27 – Zitat- und Belegregeln in drei Testdateien
+- Kategorie: K3
+- Ort: `tests/test_compare.py:218-245, 488-532`, `tests/test_evidence_span.py:8-37`,
+  `tests/test_highlight.py:55-60, 82-90`
+- Schweregrad: niedrig
+- Sicherheit: belegt
+- Beleg: Wortgrenzen, Mindestwortzahl, Zeilenumbruch und „Zahl in längerer Zahl“ werden in `test_compare.py`
+  über `compare()`, in `test_evidence_span.py` über `evidence_span()` und in `test_highlight.py` über die
+  Markierung geprüft. Beispiel „0 ha“ in „100.0 ha“: `test_compare.py:496` und `test_evidence_span.py:8`.
+- Auswirkung: Dieselbe Regel steht dreimal; bei einer Regeländerung sind drei Dateien anzupassen.
+- Möglicher Korrekturansatz: Regeln einmal an `evidence_span` testen; in `compare` und `highlight` nur je
+  einen Test, dass die Funktion verwendet wird.
+- Verhaltensänderung bei Korrektur: nein
+- Abhängigkeiten: keine
+- Aufwand: S
+
+### F-28 – Parserfehler über die Weboberfläche erneut getestet
+- Kategorie: K3
+- Ort: `tests/test_web.py:138-160, 237-248`
+- Schweregrad: niedrig
+- Sicherheit: belegt
+- Beleg: Kaputtes GeoJSON, fehlende CSV-Spalte und das CSV-Feldlimit sind in `tests/test_inputs.py` getestet
+  und zusätzlich je einzeln über `POST /check`.
+- Auswirkung: Die Oberfläche hat genau einen Fehlerpfad (`InputError` → 422); er wird mehrfach mit
+  unterschiedlichen Ursachen geprüft.
+- Möglicher Korrekturansatz: Einen Web-Test für „InputError ergibt 422 mit Meldung“ behalten, die übrigen
+  Ursachen nur in `test_inputs.py`.
+- Verhaltensänderung bei Korrektur: nein
+- Abhängigkeiten: F-19 (der Web-Test zu Rechenfehlern käme hinzu)
+- Aufwand: S
+
+### F-29 – Pydantic-Verhalten Feld für Feld getestet
+- Kategorie: K3
+- Ort: `tests/test_inputs.py:229-270`, `tests/test_preaudit_models.py:7-47`
+- Schweregrad: niedrig
+- Sicherheit: belegt
+- Beleg: `test_models_reject_non_finite_floats` prüft für neun Felder einzeln, dass `allow_inf_nan=False`
+  wirkt; `test_preaudit_models.py` prüft unter anderem, dass `frozen=True` Zuweisungen verhindert und dass
+  ein `Literal` fremde Werte ablehnt.
+- Auswirkung: Getestet wird überwiegend die Bibliothek, nicht eigene Logik. Eigene Validatoren
+  (`_both_or_neither`, `_trees_consistent`) sind darunter und haben Aussagekraft.
+- Möglicher Korrekturansatz: Tests auf eigene Validatoren beschränken; Framework-Einstellungen nicht je Feld
+  testen.
+- Verhaltensänderung bei Korrektur: nein
+- Abhängigkeiten: keine
+- Aufwand: S
+
+### F-30 – Beispieldaten an fünf Stellen end-to-end geprüft
+- Kategorie: K3
+- Ort: `tests/test_examples_run.py`, `tests/test_compare.py:378-425`, `tests/test_web.py:89-128`,
+  `tests/test_evals_cases_consistency.py`, `tests/test_calc_golden.py`
+- Schweregrad: niedrig
+- Sicherheit: belegt
+- Beleg: `examples/` wird in `test_examples_run.py` (Plausibilität), `test_compare.py` (zwei End-to-end-Fälle
+  mit eigenen `_example_run`/`_correct_claims`), `test_web.py` (tC-Fall und fehlerfreier Fall) und indirekt
+  in der Eval-Konsistenz (12 Fälle) gerechnet. Die Hilfsfunktion für den Beispiel-Lauf existiert in
+  `test_compare.py:378` und `evals/runner.py:55` getrennt.
+- Auswirkung: Der tC-Fall ist dreimal abgedeckt (compare, web, Eval-Fall `tonnes-tc-01`).
+- Möglicher Korrekturansatz: End-to-end über Beispieldaten einmal in der Eval-Konsistenz und einmal in der
+  Oberfläche; `test_compare.py` ohne Beispieldaten.
+- Verhaltensänderung bei Korrektur: nein
+- Abhängigkeiten: keine
+- Aufwand: S
+
+### F-31 – Tests ohne eigene Aussage
+- Kategorie: K3
+- Ort: `tests/test_compare.py:370-372`, `tests/test_inputs.py:139-141`, `tests/test_inputs.py:44-60`
+- Schweregrad: niedrig
+- Sicherheit: belegt
+- Beleg: `test_compare_is_deterministic` ruft eine reine Funktion zweimal auf und vergleicht.
+  `test_all_errors_share_base_class` prüft einen einzigen Fall, den jeder andere Fehlertest bereits abdeckt,
+  weil alle mit Unterklassen von `InputError` arbeiten. `test_feature_is_rejected`,
+  `test_feature_collection_is_rejected`, `test_multipolygon_is_rejected` sind drei nahezu identische
+  Funktionen.
+- Auswirkung: Zahl der Tests steigt ohne zusätzlichen Erkenntnisgewinn.
+- Möglicher Korrekturansatz: Die beiden ersten entfernen, die drei Geometrietypen parametrisieren.
 - Verhaltensänderung bei Korrektur: nein
 - Abhängigkeiten: keine
 - Aufwand: S
@@ -384,7 +498,8 @@ Geprüft: `Extractor`-Protocol (drei Implementierungen), `make_extractor` (zwei 
 - Sicherheit: belegt
 - Beleg: `is_version_valid` ruft `_latest_tag_version()` viermal auf (dreimal über `_generate_version`,
   einmal direkt), jedes Mal mit Git-Aufrufen durch dunamai. Review 05 nannte für die Bump-Tests rund 26 s.
-- Auswirkung: Langsame Tests und CI-Schritte.
+- Auswirkung: Langsame Tests und CI-Schritte. `pytest --durations` am 2026-10-31: die fünf langsamsten Tests
+  sind alle in `tests/test_bump_script.py` (bis 3,4 s je Test).
 - Möglicher Korrekturansatz: Tag-Version einmal bestimmen und weiterreichen.
 - Verhaltensänderung bei Korrektur: nein
 - Abhängigkeiten: keine
