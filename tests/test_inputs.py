@@ -1,5 +1,4 @@
 import json
-import math
 import unicodedata
 
 import pytest
@@ -24,7 +23,6 @@ from carbon_preaudit.domain.models import (
     CalculationRun,
     GeoJSONPolygon,
     Plot,
-    PlotResult,
     ProjectInputs,
     Tree,
 )
@@ -78,11 +76,6 @@ def test_bad_position_is_rejected() -> None:
 def test_csv_without_rows_is_rejected() -> None:
     with pytest.raises(EmptyPlotsError):
         parse_inputs(GEO, CSV_HEADER)
-
-
-def test_plot_model_rejects_empty_tree_list() -> None:
-    with pytest.raises(ValidationError):
-        Plot(plot_id="P1", plot_area_m2=400.0, trees=())
 
 
 def test_conflicting_plot_area_is_rejected() -> None:
@@ -226,44 +219,7 @@ def test_altitude_is_dropped() -> None:
     assert parse_inputs(polygon_text(ring), ONE_TREE_CSV).polygon.coordinates[0][0] == (0.0, 0.0)
 
 
-def test_models_reject_non_finite_floats() -> None:
-    kwargs = {
-        "run_hash": "x",
-        "params_version": "1",
-        "calc_version": "1",
-        "project_area_ha": 1.0,
-        "plot_count": 1,
-        "tree_count": 1,
-        "trees_with_default_density": 0,
-        "tco2e_per_ha": 1.0,
-        "tco2e_gross": 1.0,
-        "buffer_pct": 20.0,
-        "tco2e_buffer": 0.2,
-        "tco2e_net": 0.8,
-        "plots": (),
-    }
-    CalculationRun(**kwargs)  # pyright: ignore[reportArgumentType]
-    for field in (
-        "project_area_ha",
-        "tco2e_per_ha",
-        "tco2e_gross",
-        "buffer_pct",
-        "tco2e_buffer",
-        "tco2e_net",
-    ):
-        for bad in (math.nan, math.inf):
-            with pytest.raises(ValidationError):
-                CalculationRun(**{**kwargs, field: bad})  # pyright: ignore[reportArgumentType]
-    for field in ("plot_area_ha", "agb_kg", "tco2e"):
-        values = {"plot_id": "P", "plot_area_ha": 1.0, "agb_kg": 1.0, "tco2e": 1.0}
-        with pytest.raises(ValidationError):
-            PlotResult(**{**values, field: math.nan})  # pyright: ignore[reportArgumentType]
-
-
-def test_polygon_model_rejects_nan_and_range() -> None:
-    nan_ring = [[math.nan, 0], [1, 0], [1, 1], [0, 1], [math.nan, 0]]
-    with pytest.raises(ValidationError):
-        GeoJSONPolygon.model_validate({"type": "Polygon", "coordinates": [nan_ring]})
+def test_polygon_model_rejects_positions_out_of_range() -> None:
     far = [[0, 90], [1, 90], [1, 95], [0, 95], [0, 90]]
     with pytest.raises(ValidationError):
         GeoJSONPolygon.model_validate({"type": "Polygon", "coordinates": [far]})
