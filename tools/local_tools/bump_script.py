@@ -56,23 +56,22 @@ def _latest_tag_version() -> Version:
         ) from error
 
 
-def _generate_version(version: VersionEnum, development_release: bool) -> str:
+def _generate_version(
+    version: VersionEnum, development_release: bool, latest: Version | None = None
+) -> str:
     """Generate the next version from the latest tag reachable from `TAG_BRANCH`.
 
     The major, minor or patch number of the latest tag is incremented by 1. For a
     development release, a PEP 440 `.dev<timestamp>` suffix is added, which is the
     form `uv version` stores. Basing the version on the latest tag makes the result
-    reproducible.
+    reproducible. Pass `latest` to reuse an already determined tag version.
     """
     version_format = "{base}"
     if development_release:
         version_format += _DEV_FORMAT
 
-    return (
-        _latest_tag_version()
-        .bump(index=version.to_index())
-        .serialize(style=Style.Pep440, format=version_format)
-    )
+    base = latest if latest is not None else _latest_tag_version()
+    return base.bump(index=version.to_index()).serialize(style=Style.Pep440, format=version_format)
 
 
 def is_version_valid(current_version: str, release: bool = False) -> bool:
@@ -84,8 +83,12 @@ def is_version_valid(current_version: str, release: bool = False) -> bool:
     The base is compared exactly, so `0.0.10` is not a successor of `0.0.0`. Other
     pre-, post- or local markers (`rc1`, `.post1`, `+x`) are rejected.
     """
-    successors = [_generate_version(version, development_release=False) for version in VersionEnum]
-    latest = _latest_tag_version().serialize(style=Style.Pep440, format="{base}")
+    latest_tag = _latest_tag_version()  # one git lookup for all candidates
+    successors = [
+        _generate_version(version, development_release=False, latest=latest_tag)
+        for version in VersionEnum
+    ]
+    latest = latest_tag.serialize(style=Style.Pep440, format="{base}")
     possibilities = successors if release else [latest, *successors]
 
     try:
