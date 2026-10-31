@@ -290,6 +290,13 @@ def test_too_many_fields_is_rejected_with_line_number() -> None:
         parse_inputs(GEO, CSV_HEADER + "P1,400,T1,12,5,15,0,6\n")
 
 
+def test_oversized_csv_field_raises_input_error() -> None:
+    # A field above the csv module's 128 KiB limit raises csv.Error, not an InputError.
+    row = "P1,400," + "x" * 140_000 + ",20,15,0.6\n"
+    with pytest.raises(InvalidValueError, match=r"CSV could not be read"):
+        parse_inputs(GEO, CSV_HEADER + row)
+
+
 def test_too_few_fields_is_rejected_with_line_number() -> None:
     with pytest.raises(InvalidValueError, match=r"Line 3: too few fields"):
         parse_inputs(GEO, ONE_TREE_CSV + "P1,400,T2,20\n")
