@@ -8,6 +8,8 @@ WORKDIR /app
 
 # Install dependencies first for better layer caching.
 COPY pyproject.toml uv.lock .python-version ./
+# Workspace member; uv needs its manifest to resolve the lockfile, it is not installed.
+COPY tools/pyproject.toml ./tools/pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 

@@ -13,13 +13,21 @@ dependencies = [
     "uvicorn>=0.54.0",
 ]
 
+[tool.uv.workspace]
+members = ["tools"]
+
+[tool.uv.sources]
+local-tools = { workspace = true }
+
 [build-system]
 requires = ["uv_build>=0.13.6,<0.14.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "git-changelog>=2.5.0",
     "httpx2>=2.16.0",
+    "local-tools",
     "pre-commit>=4.7.0",
     "pyright>=1.1.414",
     "pytest>=9.2.0",
@@ -37,8 +45,18 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 pythonVersion = "3.15"
 venvPath = "."
 venv = ".venv"
-include = ["src", "tests"]
-strict = ["src"]
+include = ["src", "tests", "tools"]
+strict = ["src", "tools"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.git-changelog]
+convention = "conventional"
+in-place = false
+provider = "github"
+parse-refs = false
+parse-trailers = false
+repository = "."
+sections = "feat,fix,revert,ref,perf,build,chore,ci,deps,docs,style,test"
+template = "keepachangelog"
