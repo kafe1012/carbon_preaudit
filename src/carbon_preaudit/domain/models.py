@@ -50,7 +50,12 @@ class Plot(_Frozen):
 
 
 class GeoJSONPolygon(_Frozen):
-    """A GeoJSON Polygon (WGS84, lon/lat): outer ring first, then holes."""
+    """A GeoJSON Polygon (WGS84, lon/lat): outer ring first, then holes.
+
+    The ring checks repeat those of `calc.inputs._parse_polygon` on purpose: the parser reports them
+    as specific InputErrors with readable messages, the model keeps a polygon valid when it is built
+    without the parser (review 03, W3).
+    """
 
     type: Literal["Polygon"]
     coordinates: tuple[Ring, ...] = Field(min_length=1)
