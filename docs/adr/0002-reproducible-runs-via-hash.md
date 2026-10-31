@@ -13,19 +13,28 @@ Commits, Docker-Images werden ohne `.git` gebaut, und jede Doku-Änderung würde
 ## Entscheidung
 
 - `run_hash` ist SHA-256 über ein kanonisches JSON mit:
-  - dem Polygon (Koordinaten wie geliefert),
+  - dem Polygon (Koordinaten wie geliefert; siehe unten),
   - allen Bäumen, sortiert nach `(plot_id, tree_id)`, mit `plot_area_m2` und `wood_density_g_cm3`
     (fehlend als `null`, nicht durch den Default ersetzt),
   - `buffer_pct`,
   - `PARAMS_VERSION` aus `calc/params.py`,
   - `CALC_VERSION` aus `calc/version.py`.
 - Kanonisch heißt: `json.dumps(..., sort_keys=True, separators=(",", ":"), ensure_ascii=False)`, Zahlen
-  als `float` geparst. „12“ und „12.0“ in der CSV ergeben denselben Hash.
+  als `float` geparst, `-0.0` wird zu `0.0` normalisiert. „12“ und „12.0“ in der CSV ergeben denselben Hash.
+  IDs werden beim Einlesen auf Unicode NFC normalisiert.
+- Der Hash nimmt das Polygon so, wie es geliefert wird. Ringstart, Ringrichtung und Lochreihenfolge ändern
+  ihn, die Höhenkoordinate fällt weg (sie geht nicht in die Rechnung ein). Der Hash ist keine
+  Geometrie-Identität.
 - Jede Änderung eines Werts in `params.py` erhöht `PARAMS_VERSION`. Jede Logikänderung in `calc/` erhöht
   `CALC_VERSION`.
 - Durchsetzung: Golden-Tests führen ihre Sollwerte nach Version, z. B. `GOLDEN = {"1": {...}}`, und prüfen
   `GOLDEN[CALC_VERSION]`. Eine Logikänderung macht den Test rot. Neue Sollwerte lassen sich nur unter einer
-  neuen Version eintragen, damit ist die Erhöhung erzwungen.
+  neuen Version eintragen, damit ist die Erhöhung erzwungen. Ein zweiter Golden, `PARAMS_GOLDEN`, hält alle
+  Werte aus `params.py` nach `PARAMS_VERSION` fest und macht jede Wertänderung ohne Versionserhöhung rot.
+  `GOLDEN` enthält auch Fläche, Tonnen und `run_hash` eines kleinen festen Falls.
+- Technisch verhindert nichts, dass jemand einen bestehenden Eintrag überschreibt. Deshalb gilt: Bestehende
+  Einträge in `GOLDEN` und `PARAMS_GOLDEN` werden nie geändert, Reviews lehnen solche Änderungen ab. Neue
+  Werte bekommen eine neue Version.
 - `created_at` und andere Metadaten gehen nicht in den Hash ein.
 
 ## Konsequenzen
