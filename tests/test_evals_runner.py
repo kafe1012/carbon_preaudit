@@ -188,6 +188,11 @@ def test_git_revision_clean_dirty_and_without_git(tmp_path: Path) -> None:
     clean = git_revision(tmp_path)
     assert clean != DASH
     assert not clean.endswith("-dirty")
+    (tmp_path / "evals" / "results").mkdir(parents=True)
+    (tmp_path / "evals" / "results" / "latest.md").write_text("r", encoding="utf-8")
+    (tmp_path / ".claude").mkdir()
+    (tmp_path / ".claude" / "x.md").write_text("x", encoding="utf-8")
+    assert git_revision(tmp_path) == clean  # report and agent config are ignored
     (tmp_path / "f.txt").write_text("b", encoding="utf-8")
     assert git_revision(tmp_path) == f"{clean}-dirty"
 

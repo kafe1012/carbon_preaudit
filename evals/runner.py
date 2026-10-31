@@ -62,8 +62,15 @@ def calculate_examples() -> CalculationRun:
     )
 
 
+DIRTY_EXCLUDES = ("evals/results", ".claude")
+
+
 def git_revision(cwd: Path = REPO_ROOT) -> str:
-    """Short commit, suffixed with '-dirty' for uncommitted changes. En dash without git."""
+    """Short commit, suffixed with '-dirty' for uncommitted changes. En dash without git.
+
+    The report itself (`evals/results/`) and local agent config (`.claude/`) do not count as
+    changes: neither affects a run, and the report would otherwise mark every re-run as dirty.
+    """
     try:
         commit = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -73,7 +80,7 @@ def git_revision(cwd: Path = REPO_ROOT) -> str:
             check=True,
         ).stdout.strip()
         status = subprocess.run(
-            ["git", "status", "--porcelain"],
+            ["git", "status", "--porcelain", "--", ".", *(f":!{p}" for p in DIRTY_EXCLUDES)],
             cwd=cwd,
             capture_output=True,
             text=True,
