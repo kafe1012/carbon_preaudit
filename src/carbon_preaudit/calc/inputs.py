@@ -159,6 +159,14 @@ def _id(raw: str | None) -> str:
 
 
 def _parse_plots(csv_text: str) -> tuple[Plot, ...]:
+    # The csv module raises its own csv.Error for unreadable input, e.g. an oversized field.
+    try:
+        return _read_plots(csv_text)
+    except csv.Error as exc:
+        raise InvalidValueError(f"CSV could not be read: {exc}") from exc
+
+
+def _read_plots(csv_text: str) -> tuple[Plot, ...]:
     reader = csv.DictReader(io.StringIO(csv_text.lstrip("\ufeff")))
     header = [name.strip() for name in reader.fieldnames or []]
     reader.fieldnames = header

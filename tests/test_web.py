@@ -234,6 +234,19 @@ def test_oversized_file_gives_422(client: TestClient) -> None:
     assert "größer als" in response.text
 
 
+def test_csv_field_above_csv_module_limit_gives_422(client: TestClient) -> None:
+    _use(FakeExtractor(ClaimedValues()))
+    header = CSV.splitlines()[0]
+    oversized = f"{header}\nP1,400,{'x' * 140_000},20,15,0.6\n".encode()
+    response = client.post(
+        "/check",
+        data=_form(),
+        files={"csv_file": ("plots.csv", oversized, "text/csv")},
+    )
+    assert response.status_code == 422
+    assert "CSV could not be read" in response.text
+
+
 def test_file_at_the_limit_is_read(client: TestClient) -> None:
     _use(FakeExtractor(ClaimedValues()))
     csv_bytes = CSV.encode()
