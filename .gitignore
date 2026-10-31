@@ -24,3 +24,7 @@ htmlcov/
 # Local data
 *.db
 *.sqlite3
+
+# Local Claude Code configuration (machine-specific, not shared)
+.claude/settings.json
+.claude/launch.json

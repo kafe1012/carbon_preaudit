@@ -1,5 +1,4 @@
 from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues, Finding, Severity
-from carbon_preaudit.preaudit.compare import squash, squash_with_offsets
 from carbon_preaudit.web.highlight import (
     Mark,
     build_marks,
@@ -50,13 +49,6 @@ def test_overlap_keeps_the_more_severe_mark() -> None:
     assert out.count("<mark") == 1
     assert "hl-critical" in out
     assert "Gross " in out.split("<mark")[0]
-
-
-def test_offsets_agree_with_compare_squash() -> None:
-    text = "  a\tb \u00a0c\n\nd  "
-    squashed, offsets = squash_with_offsets(text)
-    assert squashed == squash(text) == "a b c d"
-    assert len(offsets) == len(squashed)
 
 
 def test_build_marks_levels_follow_findings() -> None:

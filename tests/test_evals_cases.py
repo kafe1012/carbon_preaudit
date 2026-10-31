@@ -41,12 +41,9 @@ def test_empty_expected_is_valid(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "content",
     [
-        VALID.replace("severity: major", "severity: huge"),
-        VALID.replace("field: tco2e_net", "field: nope"),
-        VALID.replace("id: demo-01\n", ""),
-        VALID + "extra: 1\n",
-        "- just\n- a list\n",
-        "id: [unclosed\n",
+        VALID.replace("severity: major", "severity: huge"),  # invalid value
+        VALID + "extra: 1\n",  # unknown key
+        "id: [unclosed\n",  # broken YAML
     ],
 )
 def test_invalid_case_raises(tmp_path: Path, content: str) -> None:

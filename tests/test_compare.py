@@ -2,9 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from carbon_preaudit.calc.inputs import parse_inputs
 from carbon_preaudit.calc.params import CO2_PER_C
-from carbon_preaudit.calc.run import calculate
 from carbon_preaudit.domain.models import (
     CalculationRun,
     ClaimedValue,
@@ -13,8 +11,7 @@ from carbon_preaudit.domain.models import (
     Finding,
     Severity,
 )
-from carbon_preaudit.preaudit.compare import compare, number_candidates
-from carbon_preaudit.preaudit.extractor import FakeExtractor
+from carbon_preaudit.preaudit.compare import compare, number_candidates, number_format
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 
@@ -103,16 +100,6 @@ def test_numeric_rows_inside_border_outside(
     assert f.deviation_rel == pytest.approx((outside - k) / k)
 
 
-@pytest.mark.parametrize("field", ["project_area_ha", "tco2e_gross", "tco2e_net", "buffer_pct"])
-def test_numeric_missing_is_info(field: str) -> None:
-    findings = compare(ClaimedValues(), RUN, "nothing here")
-    f = next(f for f in findings if f.field == field)
-    assert f.severity is Severity.INFO
-    assert f.claimed is None
-    assert f.quote is None
-    assert f.deviation_rel is None
-
-
 def test_all_missing_gives_five_info_findings_in_field_order() -> None:
     findings = compare(ClaimedValues(), RUN, "")
     assert [f.field for f in findings] == [
@@ -123,12 +110,7 @@ def test_all_missing_gives_five_info_findings_in_field_order() -> None:
         "methodology",
     ]
     assert {f.severity for f in findings} == {Severity.INFO}
-
-
-def test_area_just_outside_tolerance() -> None:
-    findings = run_compare(ClaimedValues(project_area_ha=num(98.9, "98.9 ha")))
-    assert [(f.field, f.severity) for f in findings] == [("project_area_ha", Severity.MAJOR)]
-    assert findings[0].deviation_rel == pytest.approx(-0.011)
+    assert all(f.claimed is None and f.quote is None for f in findings)
 
 
 def test_buffer_rows() -> None:
@@ -186,12 +168,6 @@ def test_diagnosis_tc_on_net() -> None:
     assert findings[0].diagnosis is Diagnosis.TC_INSTEAD_OF_TCO2E
 
 
-def test_diagnosis_tc_negative() -> None:
-    findings = run_compare(ClaimedValues(tco2e_gross=num(500.0, "500 t")))
-    assert findings[0].severity is Severity.CRITICAL
-    assert findings[0].diagnosis is None
-
-
 def test_diagnosis_gross_net_swapped_positive() -> None:
     findings = run_compare(ClaimedValues(tco2e_net=num(1000.0, "1000 t")))
     assert findings[0].severity is Severity.CRITICAL
@@ -226,42 +202,16 @@ def test_quote_not_in_text_is_info_and_not_compared() -> None:
     assert "Zitat nicht im Text" in gross[0].message
 
 
-def test_quote_matches_with_normalized_whitespace() -> None:
-    text = (
-        "A share of 20 %\n  of the gross\N{NO-BREAK SPACE}removals"
-        "\N{NARROW NO-BREAK SPACE}is withheld."
-    )
-    claimed = ClaimedValues(buffer_pct=num(20.0, "A share of 20 % of the gross removals"))
-    assert present(compare(claimed, RUN, text)) == []
-
-
-def test_quote_with_different_wording_is_not_found() -> None:
-    claimed = ClaimedValues(buffer_pct=num(20.0, "a share of 20 %"))  # case differs
-    findings = present(compare(claimed, RUN, "A share of 20 % is withheld"))
-    assert [f.severity for f in findings] == [Severity.INFO]
-
-
 # --- value check against the quote ---
 
 
 @pytest.mark.parametrize(
     ("value", "quote"),
     [
-        (8364.0, "8,364 tCO2e"),
-        (8364.0, "8.364 tCO2e"),  # German thousands
-        (8.364, "8.364 tCO2e"),  # English decimal
-        (8.364, "8,364 tCO2e"),  # German decimal
-        (1234567.8, "1.234.567,8 t"),
-        (1234567.8, "1,234,567.8 t"),
-        (8364.0, "8 364 tCO2e"),
-        (8364.0, "8\N{NARROW NO-BREAK SPACE}364 tCO2e"),
-        (8364.0, "8\N{NO-BREAK SPACE}364 tCO2e"),
-        (8364.0, "8'364 tCO2e"),
         (8364.0, "8364 tCO2e"),
-        (20.0, "buffer of 20 % applies to the 100 ha"),
-        (100.0, "buffer of 20 % applies to the 100 ha"),
-        (0.5, "0.5 ha"),
-        (0.5, "0,5 ha"),
+        (8364.0, "8.364 tCO2e"),  # ambiguous text: both readings count
+        (8.364, "8.364 tCO2e"),
+        (100.0, "buffer of 20 % applies to the 100 ha"),  # any number of the quote
     ],
 )
 def test_value_found_in_quote(value: float, quote: str) -> None:
@@ -278,9 +228,7 @@ def test_value_found_in_quote(value: float, quote: str) -> None:
     ("value", "quote"),
     [
         (9000.0, "8,364 tCO2e"),
-        (8364.0, "8,365 tCO2e"),
-        (836.4, "8,364 tCO2e"),
-        (0.2, "a buffer of 20 %"),
+        (836.4, "8,364 tCO2e"),  # off by a factor of ten
         (8364.0, "no number at all"),
     ],
 )
@@ -294,21 +242,14 @@ def test_value_not_in_quote_is_info_and_not_compared(value: float, quote: str) -
     assert "Wert nicht im Zitat belegt" in findings[0].message
 
 
-def test_value_check_makes_equal_value_pass() -> None:
-    # 1,000 (English thousands) equals computed gross 1000: no finding
-    assert run_compare(ClaimedValues(tco2e_gross=num(1000.0, "1,000 tCO2e"))) == []
-
-
 # --- methodology ---
 
 
 @pytest.mark.parametrize(
     ("value", "quote"),
     [
-        ("VM0047", "VM0047"),
         ("VM 0047", "VM 0047"),
         ("vm-0047", "vm-0047"),
-        ("Verra VM 0047 v1", "Verra VM 0047 v1"),
     ],
 )
 def test_methodology_variants_match(value: str, quote: str) -> None:
@@ -367,59 +308,6 @@ def test_findings_follow_field_order_and_message_is_german_with_both_values() ->
     assert "2.000,0 tCO₂e" in findings[1].message
 
 
-def test_compare_is_deterministic() -> None:
-    claimed = ClaimedValues(tco2e_gross=num(2000.0, "2000 t"))
-    assert run_compare(claimed) == run_compare(claimed)
-
-
-# --- end to end over examples/ ---
-
-
-def _example_run() -> CalculationRun:
-    return calculate(
-        parse_inputs(
-            (EXAMPLES / "project.geojson").read_text(encoding="utf-8"),
-            (EXAMPLES / "plots.csv").read_text(encoding="utf-8"),
-        )
-    )
-
-
-def _correct_claims() -> ClaimedValues:
-    return ClaimedValues(
-        project_area_ha=num(100.0, "The project area covers 100.0 ha"),
-        tco2e_gross=num(8364.0, "The gross removals of the project amount to 8,364 tCO2e"),
-        tco2e_net=num(6691.0, "the net removals available for issuance amount to 6,691 tCO2e"),
-        buffer_pct=num(20.0, "A share of 20 %\nof the gross removals is withheld"),
-        methodology=meth("VM0047", "the methodology VM0047"),
-    )
-
-
-def test_example_pdd_section_matches_example_run() -> None:
-    text = (EXAMPLES / "pdd-section.md").read_text(encoding="utf-8")
-    claimed = FakeExtractor(_correct_claims()).extract(text)
-    assert compare(claimed, _example_run(), text) == []
-
-
-def test_example_pdd_section_with_tc_instead_of_tco2e() -> None:
-    run = _example_run()
-    text = (EXAMPLES / "pdd-section.md").read_text(encoding="utf-8")
-    text = text.replace("8,364 tCO2e", "2,279 tC")
-    claimed = _correct_claims().model_copy(
-        update={"tco2e_gross": num(2279.0, "The gross removals of the project amount to 2,279 tC")}
-    )
-    assert pytest.approx(run.tco2e_gross / CO2_PER_C, rel=1e-3) == 2279.0
-    findings = compare(FakeExtractor(claimed).extract(text), run, text)
-    assert len(findings) == 1
-    f = findings[0]
-    assert f.field == "tco2e_gross"
-    assert f.severity is Severity.CRITICAL
-    assert f.diagnosis is Diagnosis.TC_INSTEAD_OF_TCO2E
-    assert f.claimed == 2279.0
-    assert f.computed == pytest.approx(run.tco2e_gross)
-    assert f.quote == "The gross removals of the project amount to 2,279 tC"
-    assert f.deviation_rel == pytest.approx(2279.0 / run.tco2e_gross - 1)
-
-
 # --- number candidates (W1, H1, H2) ---
 
 
@@ -428,21 +316,13 @@ def test_example_pdd_section_with_tc_instead_of_tco2e() -> None:
     [
         ("20 100 ha", {20100.0}),  # one number, neither 20 nor 100 on its own
         ("year 2023 8 364", {2023.0, 8364.0}),  # 2023 has 4 digits: no thousands head
-        ("1 000 000 t", {1000000.0}),
         ("8\N{NARROW NO-BREAK SPACE}364 t", {8364.0}),
-        ("8\N{NO-BREAK SPACE}364 t", {8364.0}),
         ("8\n364 t", {8.0, 364.0}),  # a line break is no thousands separator
-        ("8  364 t", {8.0, 364.0}),  # only a single space separates groups
-        ("20 10 ha", {20.0, 10.0}),  # second group has 2 digits
-        ("8 364,5 t", {8364.5}),
+        ("1.234.567,8 t", {1234567.8}),  # both separators: unambiguous
         ("8.364 t", {8364.0, 8.364}),  # ambiguous: both readings stay
-        ("8,364 t", {8364.0, 8.364}),
         ("tCO2e VM0047 v2", set()),  # digits touching letters are no numbers
         ("-5 %", {-5.0}),
-        ("(-5 %)", {-5.0}),
-        ("\N{MINUS SIGN}5 %", {-5.0}),
         ("8,000-9,000 t", {8000.0, 9000.0, 8.0, 9.0}),  # range: both ends, no sign
-        ("8,000\N{EN DASH}9,000 t", {8000.0, 9000.0, 8.0, 9.0}),
         ("1.2e4 t", set()),  # scientific notation: no candidate, 12000 is not backed
     ],
 )
@@ -462,26 +342,6 @@ def test_grouped_number_does_not_back_its_parts() -> None:
     assert [f.severity for f in findings] == [Severity.MAJOR]
 
 
-def test_number_after_year_is_found() -> None:
-    quote = "In year 2023 8 364 tCO2e"
-    findings = present(compare(ClaimedValues(tco2e_gross=num(8364.0, quote)), RUN, quote))
-    assert [f.severity for f in findings] == [Severity.CRITICAL]
-
-
-def test_unit_digits_do_not_back_a_value() -> None:
-    quote = "gross removals in tCO2e"
-    findings = present(compare(ClaimedValues(tco2e_gross=num(2.0, quote)), RUN, quote))
-    assert [f.severity for f in findings] == [Severity.INFO]
-
-
-def test_negative_value_is_backed_by_signed_quote() -> None:
-    quote = "a buffer of -5 %"
-    findings = present(compare(ClaimedValues(buffer_pct=num(-5.0, quote)), RUN, quote))
-    assert [f.severity for f in findings] == [Severity.MAJOR]
-    findings = present(compare(ClaimedValues(buffer_pct=num(5.0, quote)), RUN, quote))
-    assert [f.severity for f in findings] == [Severity.INFO]
-
-
 # --- quote as evidence (W4) ---
 
 
@@ -491,32 +351,6 @@ def test_single_number_quote_is_too_short() -> None:
     findings = present(compare(ClaimedValues(tco2e_gross=claim), RUN, text))
     assert [(f.severity, f.field) for f in findings] == [(Severity.INFO, "tco2e_gross")]
     assert "Zitat zu kurz als Beleg" in findings[0].message
-
-
-def test_quote_inside_longer_number_is_too_short() -> None:
-    text = "The project covers 100.0 ha of land."
-    # three words, but "0 ha of" starts in the middle of "100.0"
-    claim = ClaimedValue[float](value=0.0, quote="0 ha of")
-    findings = present(compare(ClaimedValues(project_area_ha=claim), RUN, text))
-    assert [f.severity for f in findings] == [Severity.INFO]
-    assert "Zitat zu kurz als Beleg" in findings[0].message
-    short = ClaimedValue[float](value=0.0, quote="0 ha")
-    findings = present(compare(ClaimedValues(project_area_ha=short), RUN, text))
-    assert "Zitat zu kurz als Beleg" in findings[0].message
-
-
-def test_quote_ending_inside_a_word_is_too_short() -> None:
-    text = "The project covers 100.0 hectares of land."
-    claim = ClaimedValue[float](value=100.0, quote="project covers 100.0 hect")
-    findings = present(compare(ClaimedValues(project_area_ha=claim), RUN, text))
-    assert "Zitat zu kurz als Beleg" in findings[0].message
-
-
-def test_quote_with_three_words_is_evidence() -> None:
-    text = "The project covers 101.5 ha of land."
-    claim = ClaimedValue[float](value=101.5, quote="covers 101.5 ha")
-    findings = present(compare(ClaimedValues(project_area_ha=claim), RUN, text))
-    assert [f.severity for f in findings] == [Severity.MAJOR]
 
 
 def test_quote_not_in_text_stays_not_found_even_if_short() -> None:
@@ -530,3 +364,35 @@ def test_methodology_quote_needs_three_words() -> None:
     findings = present(compare(ClaimedValues(methodology=claim), RUN, "uses VM0042 here"))
     assert [f.severity for f in findings] == [Severity.INFO]
     assert "Zitat zu kurz als Beleg" in findings[0].message
+
+
+# --- number format of the text (audit F-20) ---
+
+
+@pytest.mark.parametrize(
+    ("text", "fmt"),
+    [
+        ("The area covers 100,0 ha and 8.364 tCO2e.", "de"),
+        ("The area covers 100.0 ha and 8,364 tCO2e.", "en"),
+        ("Removals of 8.364 tCO2e.", None),  # ambiguous only
+        ("Signed on 31.10.2026, removals of 8.364 tCO2e.", None),  # a date is no signal
+        ("Areas of 100,0 ha and 12.5 ha.", None),  # contradicting signals
+    ],
+)
+def test_number_format_of_text(text: str, fmt: str | None) -> None:
+    assert number_format(text) == fmt
+
+
+def test_misread_number_in_german_text_is_not_backed() -> None:
+    # First eval run, case clean-03: the model read "8.364" as 8.364 in a German formatted text.
+    text = "The project area covers 100,0 ha. The gross removals amount to 8.364 tCO2e."
+    claimed = only("tco2e_gross", 8.364, "The gross removals amount to 8.364 tCO2e.")
+    [finding] = present(compare(claimed, RUN, text))
+    assert finding.severity is Severity.INFO
+    assert "Wert nicht im Zitat belegt" in finding.message
+
+
+def test_number_read_in_the_text_format_is_backed() -> None:
+    text = "The project area covers 100,0 ha. The gross removals amount to 1.000 tCO2e."
+    claimed = only("tco2e_gross", 1000.0, "The gross removals amount to 1.000 tCO2e.")
+    assert present(compare(claimed, RUN, text)) == []

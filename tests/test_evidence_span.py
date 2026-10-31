@@ -1,37 +1,33 @@
-from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues
-from carbon_preaudit.preaudit.compare import compare, evidence_span
-from tests.test_compare import RUN
+"""The rules for a quote as evidence, tested once here; compare and highlight use evidence_span."""
 
-TEXT = "Buffer is 120 % of gross. A share of 20 % of gross is withheld."
+import pytest
+
+from carbon_preaudit.preaudit.compare import evidence_span
 
 
-def test_span_skips_occurrence_inside_a_longer_number() -> None:
-    # "20 % of gross" first occurs at index 11 ("1[20 % of gross]"), without a boundary.
-    # The evidence is the second occurrence: the text up to "A share of " is 36 chars.
-    span = evidence_span("20 % of gross", TEXT)
+def test_whitespace_is_normalized_and_the_span_maps_back() -> None:
+    text = "A share of 20 %\n  of the gross\N{NO-BREAK SPACE}removals\N{NARROW NO-BREAK SPACE}is"
+    span = evidence_span("A share of 20 % of the gross removals", text)
     assert span is not None
-    start, end = span
-    assert start == TEXT.index("A share of ") + len("A share of ")
-    assert TEXT[start:end] == "20 % of gross"
+    assert text[span[0] : span[1]] == "A share of 20 %\n  of the gross\N{NO-BREAK SPACE}removals"
 
 
-def test_span_none_without_evidence() -> None:
-    assert evidence_span("0 ha total", "Area is 100.0 ha total") is None
-    assert evidence_span("two words", TEXT) is None  # too short and absent
-    assert evidence_span("20 %", TEXT) is None  # fewer than three words
-
-
-def test_span_maps_back_over_line_breaks() -> None:
-    text = "x\nThe net removals\n  amount to 6,691 tCO2e.\ny"
-    span = evidence_span("The net removals amount to 6,691 tCO2e.", text)
+def test_occurrence_inside_a_longer_number_is_skipped() -> None:
+    text = "Buffer is 120 % of gross. A share of 20 % of gross is withheld."
+    span = evidence_span("20 % of gross", text)
     assert span is not None
-    assert text[span[0] : span[1]] == "The net removals\n  amount to 6,691 tCO2e."
+    assert span[0] == text.index("A share of ") + len("A share of ")
 
 
-def test_compare_counts_the_boundary_occurrence() -> None:
-    # Unchanged behaviour: 20 % matches the run's buffer of 20 %, so no finding.
-    claimed = ClaimedValues(
-        buffer_pct=ClaimedValue[float](value=20.0, quote="20 % of gross"),
-    )
-    findings = compare(claimed, RUN, TEXT)
-    assert [f.field for f in findings if f.field == "buffer_pct"] == []
+@pytest.mark.parametrize(
+    ("quote", "text"),
+    [
+        ("20 %", "A share of 20 % is withheld."),  # fewer than three words
+        ("0 ha of", "The project covers 100.0 ha of land."),  # starts inside a number
+        ("project covers 100.0 hect", "The project covers 100.0 hectares."),  # ends inside a word
+        ("a share of 20 %", "A share of 20 % is withheld."),  # wording must match exactly
+        ("two words only", "Nothing like it here."),  # not in the text
+    ],
+)
+def test_no_evidence(quote: str, text: str) -> None:
+    assert evidence_span(quote, text) is None

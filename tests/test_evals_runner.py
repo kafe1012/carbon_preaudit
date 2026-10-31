@@ -2,20 +2,20 @@ import hashlib
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 import pytest
+from google import genai
 
 from carbon_preaudit.calc.params import PARAMS_VERSION
 from carbon_preaudit.calc.version import CALC_VERSION
 from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues, Severity
 from carbon_preaudit.preaudit.extractor import (
-    DEFAULT_GEMINI_MODEL,
-    DEFAULT_MODEL,
-    MODEL_ENV_VAR,
     SYSTEM_PROMPT,
     ExtractionError,
     Extractor,
     FakeExtractor,
+    GeminiExtractor,
 )
 from evals.cases import Case, ExpectedFinding
 from evals.report import DASH, render_report
@@ -197,12 +197,7 @@ def test_git_revision_clean_dirty_and_without_git(tmp_path: Path) -> None:
     assert git_revision(tmp_path) == f"{clean}-dirty"
 
 
-def test_requested_model_uses_override_then_provider_default(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv(MODEL_ENV_VAR, raising=False)
-    assert requested_model("gemini") == DEFAULT_GEMINI_MODEL
-    assert requested_model("anthropic") == DEFAULT_MODEL
-    assert requested_model("other") == DASH
-    monkeypatch.setenv(MODEL_ENV_VAR, "custom-1")
-    assert requested_model("gemini") == "custom-1"
+def test_requested_model_comes_from_the_extractor() -> None:
+    gemini = GeminiExtractor(client=cast(genai.Client, object()), model="custom-1")
+    assert requested_model(gemini) == "custom-1"
+    assert requested_model(FakeExtractor(ClaimedValues())) == DASH

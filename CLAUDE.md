@@ -58,7 +58,8 @@ Diese Punkte landen nur im README-Abschnitt „Bewusst nicht enthalten“.
 - **pre-commit**: ruff, pyright und `uv lock` vor jedem Commit, commitlint (Conventional Commits)
   auf jede Commit-Nachricht; Hooks nie mit `--no-verify` umgehen
 - FastAPI, Pydantic v2, Jinja2 + HTMX, Leaflet (beides per CDN, Version gepinnt)
-- SQLAlchemy 2 mit SQLite (ADR begründet den späteren Wechsel zu Postgres)
+- SQLAlchemy 2 mit SQLite (ADR begründet den späteren Wechsel zu Postgres); kommt mit Schritt 04,
+  bis dahin keine Abhängigkeit
 - Anthropic oder Google Gen AI SDK (Gemini, Default) hinter eigener Schnittstelle `Extractor` (Protocol); kein LangChain
 - Docker (ein Dockerfile), GitHub Actions
 - Versionierung: dunamai (Version aus Git-Tag), git-changelog (Release-Notes), click (Bump-CLI in `tools/`), ADR 0006
@@ -121,8 +122,8 @@ uv run --env-file .env python -m evals
 src/carbon_preaudit/
   domain/      # Pydantic-Modelle: Plot, Tree, CalculationRun, ClaimedValues, Finding
   calc/        # Fläche, Allometrie, Hash, params.py
-  preaudit/    # extractor.py (Protocol + Anthropic + Fake), compare.py
-  store/       # Persistenz der Läufe
+  preaudit/    # extractor.py (Protocol + Gemini + Anthropic + Fake), compare.py
+  store/       # Persistenz der Läufe (geplant, Schritt 04 zurückgestellt; noch nicht angelegt)
   web/         # FastAPI-App, Templates
 evals/         # cases/*.yaml, scorer, results/
 examples/      # Beispiel-GeoJSON, -CSV, -PDD-Texte
@@ -135,8 +136,9 @@ tools/         # eigenes uv-Paket local_tools: Bump-Skript (`uv run bump`), nie 
 - Bezeichner, Docstrings und Commits auf Englisch; Doku in `docs/` und README auf Deutsch
 - Type Hints überall, keine `Any` in `src/`
 - Reine Funktionen in `calc/` und `preaudit/compare.py`, keine I/O dort
-- Jede Logikänderung in `calc/` erhöht `CALC_VERSION`, jede Wertänderung in `params.py`
-  erhöht `PARAMS_VERSION`; Golden-Tests führen Sollwerte nach Version
+- Jede Änderung in `calc/`, die Ergebnisse ändert, erhöht `CALC_VERSION` (Refactorings und reine
+  Fehlerbehandlung nicht, ADR 0002); jede Wertänderung in `params.py` erhöht `PARAMS_VERSION`;
+  Golden-Tests führen Sollwerte nach Version
 - Kein Netzwerkzugriff in Unit-Tests: immer `FakeExtractor`
 - Fehler als eigene Exception-Klassen, keine nackten `except`
 

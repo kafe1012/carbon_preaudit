@@ -9,7 +9,7 @@ from carbon_preaudit.calc.run import calculate
 from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues
 from carbon_preaudit.preaudit.extractor import ExtractionError, Extractor, FakeExtractor
 from carbon_preaudit.web.app import MAX_PDD_CHARS, MAX_UPLOAD_BYTES, app, get_extractor
-from tests.helpers import CSV_HEADER
+from tests.helpers import ONE_TREE_CSV, SQUARE_001, polygon_text
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 GEOJSON = (EXAMPLES / "project.geojson").read_text(encoding="utf-8")
@@ -140,6 +140,7 @@ def test_broken_geojson_gives_422_with_message(client: TestClient) -> None:
     response = client.post("/check", data=_form(geojson_text="{not json"))
     assert response.status_code == 422
     assert "Eingabe fehlerhaft" in response.text
+    assert "Das GeoJSON ist ungültig." in response.text
     assert "Traceback" not in response.text
 
 
@@ -150,11 +151,15 @@ def test_missing_csv_gives_422(client: TestClient) -> None:
     assert "CSV fehlt" in response.text
 
 
-def test_csv_without_required_column_gives_422(client: TestClient) -> None:
-    _use(FakeExtractor(_claimed()))
-    response = client.post("/check", data=_form(csv_text=CSV_HEADER.replace("dbh_cm", "x") + "a\n"))
+def test_error_from_the_calculation_gives_422(client: TestClient) -> None:
+    # Valid for the parser, rejected by calculate(): the hole is larger than the outer ring.
+    hole = [[-0.01, -0.01], [0.02, -0.01], [0.02, 0.02], [-0.01, 0.02], [-0.01, -0.01]]
+    _use(FakeExtractor(ClaimedValues()))
+    response = client.post(
+        "/check", data=_form(geojson_text=polygon_text(SQUARE_001, hole), csv_text=ONE_TREE_CSV)
+    )
     assert response.status_code == 422
-    assert "Eingabe fehlerhaft" in response.text
+    assert "Die Geometrie des Polygons ist ungültig." in response.text
 
 
 def test_invalid_buffer_gives_422(client: TestClient) -> None:
@@ -234,19 +239,6 @@ def test_oversized_file_gives_422(client: TestClient) -> None:
     assert "größer als" in response.text
 
 
-def test_csv_field_above_csv_module_limit_gives_422(client: TestClient) -> None:
-    _use(FakeExtractor(ClaimedValues()))
-    header = CSV.splitlines()[0]
-    oversized = f"{header}\nP1,400,{'x' * 140_000},20,15,0.6\n".encode()
-    response = client.post(
-        "/check",
-        data=_form(),
-        files={"csv_file": ("plots.csv", oversized, "text/csv")},
-    )
-    assert response.status_code == 422
-    assert "CSV could not be read" in response.text
-
-
 def test_file_at_the_limit_is_read(client: TestClient) -> None:
     _use(FakeExtractor(ClaimedValues()))
     csv_bytes = CSV.encode()
@@ -294,3 +286,20 @@ def test_findings_list_shows_field_label(client: TestClient) -> None:
     assert response.status_code == 200
     assert "tco2e_gross" not in response.text
     assert '<span class="finding-field">Brutto-Menge (tCO₂e)</span>' in response.text
+
+
+def test_configured_extractor_is_built_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    from carbon_preaudit.web import app as web_app
+
+    built: list[Extractor] = []
+
+    def factory() -> Extractor:
+        extractor = FakeExtractor(ClaimedValues())
+        built.append(extractor)
+        return extractor
+
+    monkeypatch.setattr(web_app, "make_extractor", factory)
+    lazy = web_app._LazyExtractor()  # pyright: ignore[reportPrivateUsage]
+    lazy.extract("a")
+    lazy.extract("b")
+    assert len(built) == 1

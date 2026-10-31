@@ -4,12 +4,10 @@ import math
 
 from carbon_preaudit.calc import params, version
 from carbon_preaudit.calc.allometry import agb_kg, tco2e_from_agb_kg
-from carbon_preaudit.calc.area import polygon_area_ha
+from carbon_preaudit.calc.area import M2_PER_HA, polygon_area_ha
 from carbon_preaudit.calc.hashing import run_hash
 from carbon_preaudit.calc.inputs import InvalidValueError
 from carbon_preaudit.domain.models import CalculationRun, PlotResult, ProjectInputs
-
-_M2_PER_HA = 10_000.0
 
 
 def calculate(inputs: ProjectInputs) -> CalculationRun:
@@ -32,7 +30,7 @@ def calculate(inputs: ProjectInputs) -> CalculationRun:
         plot_results.append(
             PlotResult(
                 plot_id=plot.plot_id,
-                plot_area_ha=plot.plot_area_m2 / _M2_PER_HA,
+                plot_area_ha=plot.plot_area_m2 / M2_PER_HA,
                 agb_kg=plot_agb,
                 tco2e=tco2e_from_agb_kg(plot_agb),
             )
