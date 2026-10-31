@@ -51,6 +51,42 @@ Tests:
 uv run pytest
 ```
 
+## Im Container starten
+
+Die Befehle gelten für Podman. Mit Docker heißen sie gleich, statt `podman` steht dann `docker`.
+
+Image bauen:
+
+```bash
+podman build -t carbon-preaudit .
+```
+
+Container im Hintergrund starten:
+
+```bash
+podman run -d --rm -p 8000:8000 --name carbon-preaudit carbon-preaudit
+```
+
+Health-Check, die Antwort ist `{"status":"ok"}`:
+
+```bash
+curl -s localhost:8000/health
+```
+
+Die API-Doku liegt unter http://localhost:8000/docs.
+
+Logs ansehen:
+
+```bash
+podman logs -f carbon-preaudit
+```
+
+Container stoppen. Wegen `--rm` wird er dabei auch entfernt:
+
+```bash
+podman stop carbon-preaudit
+```
+
 ## Versionierung
 
 Die Version setzt nur das Bump-Skript, ausgehend vom letzten Git-Tag. Statt `minor` geht auch `patch`

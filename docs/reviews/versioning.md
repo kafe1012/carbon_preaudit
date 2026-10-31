@@ -47,13 +47,14 @@ nachgestellt. `actions/checkout@v7` habe ich per `gh api` geprüft. Das Repo sel
   Blockade bewusst lassen und festschreiben, dass der Mensch direkt nach jedem Release den Bump-PR
   öffnet und dass Dependabot-PRs bis dahin rot sind.
   Erledigt: `verify-version` lässt Gleichstand zu, `verify-version --release` (Release-Workflow) verlangt einen echten Nachfolger. ADR 0006, README und CLAUDE.md angepasst.
-- [ ] **W2** `.github/workflows/ci.yml:26-42`: `version` ist im Ruleset `protect-master` kein
+- [x] **W2** `.github/workflows/ci.yml:26-42`: `version` ist im Ruleset `protect-master` kein
   Required Check. Abgefragt mit `gh api repos/kafe1012/carbon_preaudit/rulesets/26157294`: Required
   sind nur `checks`, `docker` und `pr-title`. Die Aussage in ADR 0006 Zeile 34, sonst „schlägt der Job
   `version` fehl“, bleibt deshalb folgenlos: Ein PR mit falscher Version lässt sich trotzdem mergen.
   Vorschlag: Nach der Entscheidung zu W1 `version` als Required Check eintragen (bei Variante a
   unproblematisch) oder in ADR 0006 festhalten, dass der Job nur informiert.
-  Offen: nicht umsetzbar durch den Implementierer (Ruleset). Nach erstem CI-Lauf, Hauptsession. ADR 0006 vermerkt den Stand.
+  Erledigt: `version` ist nach dem ersten grünen CI-Lauf Pflicht-Check im Ruleset `protect-master`,
+  ADR 0006 ist angepasst.
 - [x] **W3** `tests/test_bump_script.py:21,27,34`: Alle Tests ersetzen `_generate_version` durch
   einen Fake. Die eigentliche Logik bleibt damit ungetestet: Aufruf von dunamai mit
   `tag_branch=origin/master`, `strict=True` ohne Tag, Format der Dev-Version und deren Normalisierung

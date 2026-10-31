@@ -37,8 +37,8 @@ Hash: Ein Release ohne Änderung an Rechenlogik oder Parametern darf Ergebnisse 
   Gleichstand zu, damit nachfolgende PRs (auch Dependabot und Agenten) nicht blockieren. Gebumpt wird erst
   vor dem nächsten Release, in einem eigenen PR. Ein vergessener Bump fällt spätestens im Release-Workflow
   auf, der einen echten Nachfolger verlangt.
-- Der Job `version` ist (Stand jetzt) kein Required Check im Ruleset `protect-master`. Ob er es wird,
-  entscheidet sich nach dem ersten CI-Lauf.
+- Der Job `version` ist Pflicht-Check im Ruleset `protect-master`. Ein PR mit ungültiger Version lässt sich
+  nicht mergen.
 - Der Job `version` braucht die komplette Historie samt Tags und `origin/master`.
 - Die Gültigkeitsprüfung vergleicht den Basisteil exakt, `0.0.10` gilt also nicht als Nachfolger von `0.0.0`.
 - Releases starten nur Menschen, per Absprache. Technisch kann jeder mit Schreibrecht den Workflow starten
