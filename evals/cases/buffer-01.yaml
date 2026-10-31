@@ -1,0 +1,18 @@
+id: buffer-01
+description: Der Puffer wird mit 15 % statt 20 % angegeben.
+text: |
+  The project is an afforestation and reforestation activity on degraded former pasture in Costa Rica. The project area covers 100.0 ha, as delineated by the polygon provided in Annex A. The activity follows methodology VM0047 (Afforestation, Reforestation and Revegetation) under the Verra VCS programme.
+
+  | Plot | Plot area | Trees measured |
+  | --- | --- | --- |
+  | P01 | 400 m² | 10 |
+  | P02 | 400 m² | 11 |
+  | P03 | 400 m² | 9 |
+
+  The gross removals of the project amount to 8,364 tCO2e over the crediting period. A buffer of 15 % of the gross removals is withheld to cover the risk of reversal. After the buffer deduction, the net removals available for issuance amount to 6,691 tCO2e.
+
+  Monitoring follows the plan in Section 9.
+expected:
+  - field: buffer_pct
+    severity: major
+    diagnosis: null

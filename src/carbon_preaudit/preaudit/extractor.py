@@ -21,6 +21,20 @@ DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 # Thinking tokens count towards the output limit for both providers: Claude always thinks, and
 # Gemini gets a low thinking level (see GeminiExtractor), so 8000 leaves room for the JSON answer.
 MAX_TOKENS = 8000
+# Gemini retries: 4 attempts in total, exponential backoff. The SDK retries the status codes below
+# and, independent of that list, httpx2.TimeoutException and ConnectError (so a hung request is
+# retried once the timeout below is set).
+# Units: HttpOptions.timeout is in MILLISECONDS (per attempt); the retry delays are in SECONDS.
+# Pauses between the 4 attempts: 2 s, 4 s, 8 s, each plus up to 1 s jitter (the 10 s cap is never
+# reached), so at most 3 + 5 + 9 = 17 s of waiting in total (at least 14 s). Worst case per call:
+# 4 * 60 s timeout + 17 s = 257 s.
+GEMINI_TIMEOUT_MS = 60_000
+GEMINI_RETRY_ATTEMPTS = 4
+GEMINI_RETRY_INITIAL_DELAY_S = 2.0
+GEMINI_RETRY_MAX_DELAY_S = 10.0
+GEMINI_RETRY_EXP_BASE = 2.0
+GEMINI_RETRY_JITTER_S = 1.0
+GEMINI_RETRY_STATUS_CODES = (429, 500, 502, 503, 504)
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 SYSTEM_PROMPT = """\
@@ -42,8 +56,12 @@ Rules:
   tC (tonnes of carbon) stays a tC number. Never convert it to tCO2e. A gross or net amount stated
   in tC is extracted as stated, it is not set to null. Percent values stay percent
   values, a stated 20 % is 20, not 0.2.
-- For every value give a quote: the verbatim part of the sentence that contains the value, copied
-  character by character from the document. Do not paraphrase, translate or correct it.
+- Read each number in the number format the document uses and return it as a plain JSON number.
+  In a document that writes "100,0 ha", "8.364 tCO2e" is 8364; in one that writes "100.0 ha",
+  "8,364 tCO2e" is 8364. This is reading the notation, not converting a unit.
+- For every value give a quote: the complete sentence (or list item or table row) that contains the
+  value, at least three words long, copied character by character from the document. Do not
+  shorten, paraphrase, translate or correct it.
 - If a field does not occur in the text, set both its value and its quote to null.
 - Do not guess between gross and net. Only a value explicitly labelled as net, tradable or after
   buffer is tco2e_net. Only a value explicitly labelled as gross or before buffer is tco2e_gross.
@@ -163,7 +181,20 @@ class GeminiExtractor:
             try:
                 # Reads GOOGLE_API_KEY or GEMINI_API_KEY; raises ValueError without a key.
                 # GOOGLE_API_KEY takes precedence over GEMINI_API_KEY (the SDK only logs a warning).
-                client = genai.Client(vertexai=False)
+                client = genai.Client(
+                    vertexai=False,
+                    http_options=genai_types.HttpOptions(
+                        timeout=GEMINI_TIMEOUT_MS,
+                        retry_options=genai_types.HttpRetryOptions(
+                            attempts=GEMINI_RETRY_ATTEMPTS,
+                            initial_delay=GEMINI_RETRY_INITIAL_DELAY_S,
+                            max_delay=GEMINI_RETRY_MAX_DELAY_S,
+                            exp_base=GEMINI_RETRY_EXP_BASE,
+                            jitter=GEMINI_RETRY_JITTER_S,
+                            http_status_codes=list(GEMINI_RETRY_STATUS_CODES),
+                        ),
+                    ),
+                )
             except ValueError as e:
                 raise ExtractionError(f"Gemini client could not be created: {e}") from e
         self._client = client

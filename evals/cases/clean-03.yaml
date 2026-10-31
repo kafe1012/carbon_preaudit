@@ -1,0 +1,9 @@
+id: clean-03
+description: Korrekte Werte im deutschen Zahlenformat, keine Befunde erwartet.
+text: |
+  The project area covers 100,0 ha of degraded former pasture in Costa Rica. The project area is delineated by the polygon in Annex A, and the activity follows methodology VM0047 under the Verra VCS programme. Three permanent sample plots, each 400 m², were measured in 2024 and evaluated with the allometric equation of Chave et al. (2014).
+
+  Plot values were scaled to the project area on an area weighted basis. The gross removals of the project amount to 8.364 tCO2e over the crediting period. A buffer of 20 % of the gross removals is withheld to cover the risk of reversal, so that the net removals after the buffer deduction amount to 6.691 tCO2e available for issuance.
+
+  Monitoring follows Section 9 and is repeated every five years.
+expected: []
