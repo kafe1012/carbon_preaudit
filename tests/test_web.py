@@ -9,7 +9,7 @@ from carbon_preaudit.calc.run import calculate
 from carbon_preaudit.domain.models import ClaimedValue, ClaimedValues
 from carbon_preaudit.preaudit.extractor import ExtractionError, Extractor, FakeExtractor
 from carbon_preaudit.web.app import MAX_PDD_CHARS, MAX_UPLOAD_BYTES, app, get_extractor
-from tests.helpers import CSV_HEADER
+from tests.helpers import CSV_HEADER, ONE_TREE_CSV, SQUARE_001, polygon_text
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 GEOJSON = (EXAMPLES / "project.geojson").read_text(encoding="utf-8")
@@ -149,6 +149,17 @@ def test_missing_csv_gives_422(client: TestClient) -> None:
     response = client.post("/check", data=_form(csv_text=""))
     assert response.status_code == 422
     assert "CSV fehlt" in response.text
+
+
+def test_error_from_the_calculation_gives_422(client: TestClient) -> None:
+    # Valid for the parser, rejected by calculate(): the hole is larger than the outer ring.
+    hole = [[-0.01, -0.01], [0.02, -0.01], [0.02, 0.02], [-0.01, 0.02], [-0.01, -0.01]]
+    _use(FakeExtractor(ClaimedValues()))
+    response = client.post(
+        "/check", data=_form(geojson_text=polygon_text(SQUARE_001, hole), csv_text=ONE_TREE_CSV)
+    )
+    assert response.status_code == 422
+    assert "Die Geometrie des Polygons ist ungültig." in response.text
 
 
 def test_csv_without_required_column_gives_422(client: TestClient) -> None:

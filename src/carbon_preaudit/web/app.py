@@ -226,9 +226,10 @@ def check(
         if len(pdd_text) > MAX_PDD_CHARS:
             raise InputError(f"PDD-Text: länger als {MAX_PDD_CHARS} Zeichen.")
         inputs = parse_inputs(geojson, csv_content, _buffer_pct(buffer_pct))
+        # calculate() raises InputErrors too: a hole not smaller than the outer ring, overflow.
+        run = calculate(inputs)
     except InputError as e:
         return _error(request, _input_error_message(e), 422)
-    run = calculate(inputs)
     context: dict[str, object] = {
         "run": run,
         "polygon": inputs.polygon.model_dump(mode="json"),
