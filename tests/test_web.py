@@ -140,6 +140,7 @@ def test_broken_geojson_gives_422_with_message(client: TestClient) -> None:
     response = client.post("/check", data=_form(geojson_text="{not json"))
     assert response.status_code == 422
     assert "Eingabe fehlerhaft" in response.text
+    assert "Das GeoJSON ist ungültig." in response.text
     assert "Traceback" not in response.text
 
 

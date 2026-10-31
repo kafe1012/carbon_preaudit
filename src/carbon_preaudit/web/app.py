@@ -12,7 +12,19 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from carbon_preaudit.calc.inputs import InputError, parse_inputs
+from carbon_preaudit.calc.inputs import (
+    DuplicateTreeError,
+    EmptyPlotsError,
+    InconsistentPlotAreaError,
+    InputError,
+    InvalidGeoJSONError,
+    InvalidGeometryError,
+    InvalidValueError,
+    MissingColumnError,
+    OpenRingError,
+    UnsupportedGeometryError,
+    parse_inputs,
+)
 from carbon_preaudit.calc.params import DEFAULT_BUFFER_PCT
 from carbon_preaudit.calc.run import calculate
 from carbon_preaudit.domain.models import ClaimedValues
@@ -40,6 +52,18 @@ SEVERITY_LABELS = {
 DIAGNOSIS_LABELS = {
     "tc_instead_of_tco2e": "Vermutlich tC statt tCO₂e",
     "gross_net_swapped": "Brutto/netto verwechselt",
+}
+# calc/ reports in English; the page is German. The English text stays as technical detail.
+INPUT_ERROR_MESSAGES: dict[type[InputError], str] = {
+    InvalidGeoJSONError: "Das GeoJSON ist ungültig.",
+    UnsupportedGeometryError: "Unterstützt wird nur ein einfaches GeoJSON-Polygon.",
+    OpenRingError: "Ein Ring des Polygons ist nicht geschlossen.",
+    InvalidGeometryError: "Die Geometrie des Polygons ist ungültig.",
+    MissingColumnError: "In der CSV fehlen Pflichtspalten.",
+    EmptyPlotsError: "Die CSV enthält keine Baumzeilen.",
+    InvalidValueError: "Ein Wert in den Eingaben ist ungültig.",
+    InconsistentPlotAreaError: "Ein Plot hat widersprüchliche Flächenangaben.",
+    DuplicateTreeError: "Eine tree_id kommt in einem Plot doppelt vor.",
 }
 
 app = FastAPI(title="carbon-preaudit")
@@ -153,6 +177,12 @@ def _buffer_pct(raw: str) -> float:
     return value
 
 
+def _input_error_message(error: InputError) -> str:
+    """German sentence for errors from calc/, with the English text as detail."""
+    german = INPUT_ERROR_MESSAGES.get(type(error))
+    return str(error) if german is None else f"{german} Details: {error}"
+
+
 def _error(request: Request, message: str, status_code: int) -> HTMLResponse:
     return templates.TemplateResponse(
         request, "_error.html", {"message": message}, status_code=status_code
@@ -197,7 +227,7 @@ def check(
             raise InputError(f"PDD-Text: länger als {MAX_PDD_CHARS} Zeichen.")
         inputs = parse_inputs(geojson, csv_content, _buffer_pct(buffer_pct))
     except InputError as e:
-        return _error(request, str(e), 422)
+        return _error(request, _input_error_message(e), 422)
     run = calculate(inputs)
     context: dict[str, object] = {
         "run": run,
