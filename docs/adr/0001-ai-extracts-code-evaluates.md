@@ -14,8 +14,8 @@ Befund bis zur Rohquelle nachvollziehen können.
 
 - Das LLM liefert ausschließlich `ClaimedValues`: je Feld den Wert, wie er im Text steht, und ein wörtliches
   Zitat, oder `null`. Es rechnet nicht, rechnet keine Einheiten um und bewertet nicht.
-- Der Zugriff läuft über ein eigenes Protocol `Extractor`. `AnthropicExtractor` ist die einzige Stelle mit
-  Netzwerkzugriff, `FakeExtractor` dient Tests und Entwicklung. Kein LangChain.
+- Der Zugriff läuft über ein eigenes Protocol `Extractor`. nur die Extractor-Implementierungen haben
+  Netzwerkzugriff (ADR 0008), `FakeExtractor` dient Tests und Entwicklung. Kein LangChain.
 - Toleranzen, Schweregrade, Diagnosen (tC statt tCO₂e, brutto/netto verwechselt) und die Methodologie-Regel
   liegen als reine Funktion in `preaudit/compare.py`, die Konstanten in `calc/params.py`.
 - `compare()` prüft, ob jedes Zitat wörtlich im Text steht. Fehlt es, wird der Wert nicht verglichen und als
