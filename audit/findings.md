@@ -14,12 +14,12 @@ Kategorie nach Fundort. Der Schweregrad stuft die Auswirkung ein, er ist keine P
 | K5 Over-Engineering | 0 | 0 | 0 | 0 | 0 | 0 |
 | K6 Duplikation | 5 | 0 | 0 | 0 | 5 | 1 |
 | K7 Halluzinierte oder veraltete APIs, Packages | 3 | 0 | 0 | 2 | 1 | 1 |
-| K8 Unbelegte Erfolgsbehauptungen | 2 | 0 | 0 | 1 | 1 | 0 |
+| K8 Unbelegte Erfolgsbehauptungen | 3 | 0 | 0 | 2 | 1 | 0 |
 | K9 Unvollständige Implementierungen | 1 | 0 | 0 | 0 | 1 | 0 |
 | K10 Kontextverlust | 1 | 0 | 0 | 0 | 1 | 1 |
 | K11 Security, Performance, Edge Cases | 5 | 0 | 2 | 1 | 2 | 1 |
 | K12 Unnötige Dependencies, Rauschen | 1 | 0 | 0 | 0 | 1 | 0 |
-| **gesamt** | **31** | **0** | **3** | **6** | **22** | **5** |
+| **gesamt** | **32** | **0** | **3** | **7** | **22** | **5** |
 
 ## K1 – Verschluckte Fehler und stille Fallbacks
 
@@ -392,6 +392,22 @@ Geprüft: `Extractor`-Protocol (drei Implementierungen), `make_extractor` (zwei 
 - Möglicher Korrekturansatz: Zeilen an den Stand anpassen, `store/` als geplant markieren.
 - Verhaltensänderung bei Korrektur: nein
 - Abhängigkeiten: keine
+- Aufwand: S
+
+### F-32 – Container-Start laut README ohne API-Key
+- Kategorie: K8
+- Ort: `README.md` (Abschnitt „Im Container starten“), `.dockerignore`
+- Schweregrad: mittel
+- Sicherheit: belegt
+- Beleg: Der dokumentierte Befehl `podman run … carbon-preaudit` übergibt keine Umgebungsvariablen; `.env`
+  ist per `.dockerignore` nicht im Image. Im Container fehlt damit jeder Key, `POST /check` zeigt immer
+  „Extraktion fehlgeschlagen“. Entdeckt bei der Korrektur von F-21.
+- Auswirkung: Die Prüfung, der Kern der Demo, funktioniert im Container nach README nicht; Kennzahlen und
+  Karte erscheinen trotzdem.
+- Möglicher Korrekturansatz: (a) `--env-file .env` im README-Befehl. (b) Hinweis, dass der Container ohne Key
+  nur rechnet.
+- Verhaltensänderung bei Korrektur: nein (Code), ja (dokumentierter Ablauf)
+- Abhängigkeiten: F-21
 - Aufwand: S
 
 ## K9 – Unvollständige Implementierungen
