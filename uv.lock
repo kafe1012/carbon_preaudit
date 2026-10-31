@@ -65,6 +65,7 @@ dependencies = [
     { name = "anthropic" },
     { name = "fastapi" },
     { name = "google-genai" },
+    { name = "httpx2" },
     { name = "jinja2" },
     { name = "pydantic" },
     { name = "pyproj" },
@@ -76,7 +77,6 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "git-changelog" },
-    { name = "httpx2" },
     { name = "local-tools" },
     { name = "pre-commit" },
     { name = "pyright" },
@@ -91,6 +91,7 @@ requires-dist = [
     { name = "anthropic", specifier = ">=2.3.0" },
     { name = "fastapi", specifier = ">=0.162.0" },
     { name = "google-genai", specifier = ">=2.34.0" },
+    { name = "httpx2", specifier = ">=2.16.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pyproj", specifier = ">=3.8.0" },
@@ -102,7 +103,6 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "git-changelog", specifier = ">=2.5.0" },
-    { name = "httpx2", specifier = ">=2.16.0" },
     { name = "local-tools", editable = "tools" },
     { name = "pre-commit", specifier = ">=4.7.0" },
     { name = "pyright", specifier = ">=1.1.414" },
