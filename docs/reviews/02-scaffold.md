@@ -70,10 +70,11 @@ ADR 0004, ADR 0005
   lokal mit podman geprüft wurde: dass der Nicht-Root-User die `.venv` lesen und uvicorn starten
   kann. Optional.
   Erledigt: Job `docker` taggt das Image, startet den Container im Hintergrund, prüft `/health` mit Retry-Schleife und stoppt ihn.
-- [ ] **H4** Plan, DoD „Pflicht-Checks im Ruleset“: Das lässt sich nicht aus dem Repo prüfen. Die
+- [x] **H4** Plan, DoD „Pflicht-Checks im Ruleset“: Das lässt sich nicht aus dem Repo prüfen. Die
   Check-Namen, die ins Ruleset gehören, sind die Job-Namen `checks`, `docker` und `pr-title`. Sie
   erscheinen erst nach dem ersten Lauf auf GitHub als auswählbar, also erst nach Behebung von K1.
-  Offen: nach erstem CI-Lauf, Hauptsession.
+  Erledigt: `checks`, `docker` und `pr-title` sind nach dem ersten grünen CI-Lauf als Pflicht-Checks
+  (strict) im Ruleset `protect-master` eingetragen.
 
 Ohne Befund geprüft: pre-commit überspringt in CI `uv-sync` (Manifest-Stages
 `post-checkout/post-merge/post-rewrite`) und `commitlint` (Stage `commit-msg`) und installiert
