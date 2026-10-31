@@ -14,6 +14,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
 COPY src ./src
+# The web app loads the example inputs from /app/examples (EXAMPLES_DIR in web/app.py).
+COPY examples ./examples
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 

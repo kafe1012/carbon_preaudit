@@ -1,0 +1,69 @@
+<div class="result-grid">
+  <div class="result-left">
+    <div class="card">
+      <h2>Projektfläche</h2>
+      <div id="map" class="map" aria-label="Karte der Projektfläche"></div>
+      <script type="application/json" id="polygon-data">{{ polygon | tojson }}</script>
+    </div>
+    <div class="card">
+      <h2>Kennzahlen</h2>
+      <div class="tiles">
+        <div class="tile"><span class="tile-value">{{ run.project_area_ha | de(2) }}</span><span class="tile-label">Fläche (ha)</span></div>
+        <div class="tile"><span class="tile-value">{{ run.tco2e_per_ha | de(2) }}</span><span class="tile-label">tCO₂e/ha</span></div>
+        <div class="tile"><span class="tile-value">{{ run.tco2e_gross | de(1) }}</span><span class="tile-label">tCO₂e brutto</span></div>
+        <div class="tile"><span class="tile-value">{{ run.tco2e_net | de(1) }}</span><span class="tile-label">tCO₂e netto</span></div>
+        <div class="tile"><span class="tile-value">{{ run.buffer_pct | de(1) }} %</span><span class="tile-label">Puffer</span></div>
+        <div class="tile"><span class="tile-value">{{ run.plot_count }}</span><span class="tile-label">Plots</span></div>
+        <div class="tile"><span class="tile-value">{{ run.tree_count }}</span><span class="tile-label">Bäume</span></div>
+        <div class="tile"><span class="tile-value">{{ run.trees_with_default_density }}</span><span class="tile-label">Bäume mit Default-Dichte</span></div>
+        <div class="tile"><span class="tile-value mono" title="{{ run.run_hash }}">{{ short_hash }}</span><span class="tile-label">Lauf-Hash</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="result-right">
+    <div class="card">
+      <h2>PDD-Text</h2>
+      <p class="legend">
+        <span class="hl hl-critical">kritisch</span>
+        <span class="hl hl-major">wichtig</span>
+        <span class="hl hl-info">hinweis</span>
+        <span class="hl hl-ok">belegt</span>
+      </p>
+      <div class="pdd-text">{{ pdd_html | safe }}</div>
+    </div>
+    <div class="card">
+      <h2>Befunde</h2>
+      {% if extraction_error %}
+      <div class="notice notice-error" role="alert">Extraktion fehlgeschlagen: {{ extraction_error }}</div>
+      {% elif not findings %}
+      <div class="notice notice-ok">Keine Abweichungen gefunden.</div>
+      {% else %}
+      <ul class="findings">
+        {% for f in findings %}
+        <li class="finding finding-{{ f.severity.value }}">
+          <div class="finding-head">
+            <span class="badge badge-{{ f.severity.value }}">{{ severity_labels[f.severity.value] }}</span>
+            <span class="finding-field">{{ field_labels[f.field] }}</span>
+          </div>
+          <p>{{ f.message }}</p>
+          <dl>
+            <dt>behauptet</dt>
+            <dd>{% if f.claimed is none %}–{% elif f.claimed is number %}{{ f.claimed | de(2) }}{% else %}{{ f.claimed }}{% endif %}</dd>
+            <dt>berechnet</dt>
+            <dd>{% if f.computed is number %}{{ f.computed | de(2) }}{% else %}{{ f.computed }}{% endif %}</dd>
+            <dt>Abweichung</dt>
+            <dd>{{ f.deviation_rel | de_pct }}</dd>
+            {% if f.diagnosis %}
+            <dt>Diagnose</dt>
+            <dd>{{ diagnosis_labels[f.diagnosis.value] }}</dd>
+            {% endif %}
+          </dl>
+          {% if f.quote %}<blockquote>{{ f.quote }}</blockquote>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if extracted_by %}<p class="meta">Extrahiert von: {{ extracted_by }}</p>{% endif %}
+    </div>
+  </div>
+</div>

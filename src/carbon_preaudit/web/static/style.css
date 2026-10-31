@@ -1,0 +1,124 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #fff;
+  --text: #1d2330;
+  --muted: #5d6677;
+  --border: #d9dde5;
+  --critical: #c62828;
+  --critical-bg: #fde4e4;
+  --major: #b45f06;
+  --major-bg: #ffe9cc;
+  --info: #1f5fa8;
+  --info-bg: #dcebfa;
+  --ok: #2e7d32;
+  --ok-bg: #dff3e0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+.page-header { padding: 1.25rem 1.5rem 0; max-width: 1280px; margin: 0 auto; }
+.page-header h1 { margin: 0; font-size: 1.5rem; }
+.page-header p { margin: 0.25rem 0 0; color: var(--muted); }
+
+main { max-width: 1280px; margin: 0 auto; padding: 1rem 1.5rem 3rem; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.card h2 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+
+label { display: block; font-weight: 600; margin: 0.5rem 0 0.25rem; }
+textarea, input[type="number"] {
+  width: 100%;
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
+input[type="number"] { max-width: 10rem; }
+details { margin-top: 0.4rem; }
+summary { cursor: pointer; color: var(--muted); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-row { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end; margin-top: 0.5rem; }
+.actions { display: flex; gap: 0.75rem; align-items: center; }
+
+button, .button {
+  font: inherit;
+  padding: 0.5rem 1.1rem;
+  border-radius: 4px;
+  border: 1px solid var(--info);
+  background: var(--info);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+}
+.button.secondary { background: #fff; color: var(--info); }
+.htmx-indicator { display: none; color: var(--muted); }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: inline; }
+
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+
+.map { height: 320px; border-radius: 4px; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.6rem; }
+.tile {
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg);
+  border-radius: 6px;
+}
+.tile-value { font-size: 1.2rem; font-weight: 700; }
+.tile-label { font-size: 0.8rem; color: var(--muted); }
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1rem; }
+
+.pdd-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.legend { margin: 0 0 0.5rem; font-size: 0.85rem; }
+.hl { padding: 0.05rem 0.25rem; border-radius: 3px; }
+.hl-critical { background: var(--critical-bg); box-shadow: inset 0 -2px var(--critical); }
+.hl-major { background: var(--major-bg); box-shadow: inset 0 -2px var(--major); }
+.hl-info { background: var(--info-bg); box-shadow: inset 0 -2px var(--info); }
+.hl-ok { background: var(--ok-bg); box-shadow: inset 0 -2px var(--ok); }
+
+.notice { padding: 0.6rem 0.8rem; border-radius: 6px; }
+.notice-error { background: var(--critical-bg); color: var(--critical); }
+.notice-ok { background: var(--ok-bg); color: var(--ok); }
+
+.findings { list-style: none; margin: 0; padding: 0; }
+.finding { border-left: 4px solid var(--border); padding: 0.4rem 0 0.4rem 0.8rem; margin-bottom: 0.9rem; }
+.finding-critical { border-color: var(--critical); }
+.finding-major { border-color: var(--major); }
+.finding-info { border-color: var(--info); }
+.finding-head { display: flex; gap: 0.6rem; align-items: center; }
+.finding-field { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; color: var(--muted); }
+.finding p { margin: 0.3rem 0; }
+.finding dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.1rem 0.8rem; margin: 0.3rem 0; font-size: 0.9rem; }
+.finding dt { color: var(--muted); }
+.finding dd { margin: 0; }
+.finding blockquote { margin: 0.3rem 0 0; padding-left: 0.6rem; border-left: 2px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+
+.badge { padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; color: #fff; }
+.badge-critical { background: var(--critical); }
+.badge-major { background: var(--major); }
+.badge-info { background: var(--info); }
+
+.meta { color: var(--muted); font-size: 0.85rem; margin: 0.5rem 0 0; }
+
+@media (max-width: 800px) {
+  .form-grid, .result-grid { grid-template-columns: 1fr; }
+  main { padding: 0.75rem; }
+}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>carbon-preaudit</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" defer></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"
+    integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="page-header">
+    <h1>carbon-preaudit</h1>
+    <p>Pre-Audit-Check für Aufforstungsprojekte: Passen die Zahlen im PDD-Text zu den Projektdaten?</p>
+  </header>
+  <main>
+    <form id="check-form" class="card" hx-post="/check" hx-target="#result"
+          hx-encoding="multipart/form-data" hx-indicator="#busy">
+      <div class="form-grid">
+        <div>
+          <label for="geojson_file">Projektfläche (GeoJSON-Polygon, WGS84)</label>
+          <input type="file" id="geojson_file" name="geojson_file" accept=".geojson,.json,application/geo+json,application/json">
+          <details {% if form.geojson_text %}open{% endif %}>
+            <summary>oder Text einfügen</summary>
+            <textarea name="geojson_text" rows="6" spellcheck="false">{{ form.geojson_text }}</textarea>
+          </details>
+        </div>
+        <div>
+          <label for="csv_file">Messdaten (CSV)</label>
+          <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv">
+          <details {% if form.csv_text %}open{% endif %}>
+            <summary>oder Text einfügen</summary>
+            <textarea name="csv_text" rows="6" spellcheck="false">{{ form.csv_text }}</textarea>
+          </details>
+        </div>
+      </div>
+      <label for="pdd_text">PDD-Textabschnitt</label>
+      <textarea id="pdd_text" name="pdd_text" rows="10">{{ form.pdd_text }}</textarea>
+      <div class="form-row">
+        <div>
+          <label for="buffer_pct">Pufferabzug (%)</label>
+          <input type="number" id="buffer_pct" name="buffer_pct" value="{{ form.buffer_pct }}" min="0" max="100" step="any">
+        </div>
+        <div class="actions">
+          <button type="submit">Prüfen</button>
+          <a class="button secondary" href="/example">Beispiel laden</a>
+          <span id="busy" class="htmx-indicator">Prüfe …</span>
+        </div>
+      </div>
+    </form>
+    <section id="result" aria-live="polite"></section>
+  </main>
+</body>
+</html>

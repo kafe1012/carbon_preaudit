@@ -28,7 +28,7 @@ FIELD_ORDER: tuple[FindingField, ...] = (
     "methodology",
 )
 _SEVERITY_ORDER = {Severity.CRITICAL: 0, Severity.MAJOR: 1, Severity.INFO: 2}
-_LABELS: dict[FindingField, str] = {
+LABELS: dict[FindingField, str] = {
     "project_area_ha": "Projektfläche",
     "tco2e_gross": "Brutto-Menge (tCO₂e)",
     "tco2e_net": "Netto-Menge (tCO₂e)",
@@ -50,12 +50,12 @@ _VM_CODE = re.compile(r"VM\d{4}")
 _WHITESPACE_OR_HYPHEN = re.compile(r"[\s\-\u2010-\u2015\u2212]+")
 
 
-def _squash(text: str) -> str:
+def squash(text: str) -> str:
     """Normalize all whitespace runs (including no-break and narrow spaces) to one space."""
     return " ".join(text.split())
 
 
-def _de(x: float, digits: int) -> str:
+def format_de(x: float, digits: int) -> str:
     """Format with German separators: 1.234,5."""
     s = f"{x:,.{digits}f}"
     return s.replace(",", "\0").replace(".", ",").replace("\0", ".")
@@ -146,23 +146,48 @@ def _value_in_quote(value: float, quote: str) -> bool:
     )
 
 
-def _quote_in_text(quote: str, text: str) -> bool:
+def quote_in_text(quote: str, text: str) -> bool:
     """The quote occurs verbatim (whitespace normalized) in the text."""
-    return _squash(quote) in _squash(text)
+    return squash(quote) in squash(text)
+
+
+def squash_with_offsets(text: str) -> tuple[str, list[int]]:
+    """Squashed text (same rule as `squash`) and, per squashed char, the original index.
+
+    The separator space between two words maps to -1.
+    """
+    parts: list[str] = []
+    offsets: list[int] = []
+    for i, m in enumerate(re.finditer(r"\S+", text)):
+        if i > 0:
+            parts.append(" ")
+            offsets.append(-1)
+        parts.append(m.group())
+        offsets.extend(range(m.start(), m.end()))
+    return "".join(parts), offsets
+
+
+def evidence_span(quote: str, text: str) -> tuple[int, int] | None:
+    """Span (start, end) in the original text where the quote counts as evidence, or None.
+
+    At least MIN_QUOTE_WORDS words, and the quote starts and ends on word boundaries.
+    A digit is not on a boundary when it continues a longer number: "0 ha" is no evidence
+    in "100.0 ha". The first match on a boundary counts.
+    """
+    q = squash(quote)
+    if len(q.split()) < MIN_QUOTE_WORDS:
+        return None
+    before = r"(?<![\w])(?<!\d[.,'])" if _WORD_CHAR.match(q[0]) else ""
+    after = r"(?![\w])(?![.,']\d)" if _WORD_CHAR.match(q[-1]) else ""
+    squashed, offsets = squash_with_offsets(text)
+    match = re.search(before + re.escape(q) + after, squashed)
+    if match is None:
+        return None
+    return offsets[match.start()], offsets[match.end() - 1] + 1
 
 
 def _quote_is_evidence(quote: str, text: str) -> bool:
-    """At least MIN_QUOTE_WORDS words, and the quote starts and ends on word boundaries.
-
-    A digit is not on a boundary when it continues a longer number: "0 ha" is no evidence
-    in "100.0 ha".
-    """
-    q = _squash(quote)
-    if len(q.split()) < MIN_QUOTE_WORDS:
-        return False
-    before = r"(?<![\w])(?<!\d[.,'])" if _WORD_CHAR.match(q[0]) else ""
-    after = r"(?![\w])(?![.,']\d)" if _WORD_CHAR.match(q[-1]) else ""
-    return re.search(before + re.escape(q) + after, _squash(text)) is not None
+    return evidence_span(quote, text) is not None
 
 
 def _normalize_methodology(text: str) -> str:
@@ -199,7 +224,7 @@ def _info(
 def _check_number(
     field: FindingField, c: float, quote: str, k: float, run: CalculationRun
 ) -> Finding | None:
-    label = _LABELS[field]
+    label = LABELS[field]
     if field == "project_area_ha":
         if _within_rel(c, k, TOL_AREA_REL):
             return None
@@ -215,11 +240,12 @@ def _check_number(
     diagnosis = _diagnose(field, c, k, run)
     claimed_unit = "tC" if diagnosis is Diagnosis.TC_INSTEAD_OF_TCO2E else unit
     message = (
-        f"{label}: behauptet {_de(c, digits)} {claimed_unit}, berechnet {_de(k, digits)} {unit}"
+        f"{label}: behauptet {format_de(c, digits)} {claimed_unit}, "
+        f"berechnet {format_de(k, digits)} {unit}"
     )
     rel = _rel(c, k)
     if rel is not None:
-        message += f" (Abweichung {'+' if rel >= 0 else '-'}{_de(abs(rel) * 100, 1)} %)"
+        message += f" (Abweichung {'+' if rel >= 0 else '-'}{format_de(abs(rel) * 100, 1)} %)"
     message += "."
     if diagnosis is Diagnosis.TC_INSTEAD_OF_TCO2E:
         message += " Vermutlich tC statt tCO₂e."
@@ -271,11 +297,11 @@ def _check_methodology(value: str, quote: str) -> Finding | None:
 def _check_numeric_field(
     field: FindingField, claim: ClaimedValue[float], k: float, run: CalculationRun, text: str
 ) -> Finding | None:
-    label = _LABELS[field]
+    label = LABELS[field]
     value, quote = claim.value, claim.quote
     if value is None or quote is None:
         return _info(field, None, k, None, f"{label}: im Text nicht gefunden.")
-    if not _quote_in_text(quote, text):
+    if not quote_in_text(quote, text):
         return _info(field, value, k, quote, f"{label}: Zitat nicht im Text gefunden.")
     if not _quote_is_evidence(quote, text):
         return _info(field, value, k, quote, f"{label}: Zitat zu kurz als Beleg.")
@@ -285,12 +311,12 @@ def _check_numeric_field(
 
 
 def _check_methodology_field(claim: ClaimedValue[str], text: str) -> Finding | None:
-    label = _LABELS["methodology"]
+    label = LABELS["methodology"]
     value, quote = claim.value, claim.quote
     expected = EXPECTED_METHODOLOGY
     if value is None or quote is None:
         return _info("methodology", None, expected, None, f"{label}: im Text nicht gefunden.")
-    if not _quote_in_text(quote, text):
+    if not quote_in_text(quote, text):
         return _info(
             "methodology", value, expected, quote, f"{label}: Zitat nicht im Text gefunden."
         )

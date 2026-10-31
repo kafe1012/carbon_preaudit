@@ -295,8 +295,8 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
   `run_hash`, beide Versionen, App-Version und Modell fest. Eine eigene Version für `compare()` gibt es
   weiterhin nicht. Die App-Version deckt Änderungen zwischen zwei Releases nicht ab (sie ändert sich nur
   durch das Bump-Skript, ADR 0006). Deshalb stehen im Bericht zusätzlich der Git-Commit (kurz, mit
-  `-dirty` bei Änderungen im Arbeitsbaum) und ein SHA-256 über `SYSTEM_PROMPT` (12 Zeichen). Für die Oberfläche (07) bleibt offen, ob Befunde abgelegt
-  werden.
+  `-dirty` bei Änderungen im Arbeitsbaum) und ein SHA-256 über `SYSTEM_PROMPT` (12 Zeichen).
+  Die Oberfläche legt Befunde nicht ab. Mit Schritt 04 ließe sich ein Lauf samt Befunden über den Hash speichern.
 
 ## Fortschritt
 
@@ -306,4 +306,4 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
 - [ ] 04 Speicherung der Läufe
 - [x] 05 Pre-Audit
 - [x] 06 Evals
-- [ ] 07 Oberfläche
+- [x] 07 Oberfläche
