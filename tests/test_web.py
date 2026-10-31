@@ -306,3 +306,20 @@ def test_findings_list_shows_field_label(client: TestClient) -> None:
     assert response.status_code == 200
     assert "tco2e_gross" not in response.text
     assert '<span class="finding-field">Brutto-Menge (tCO₂e)</span>' in response.text
+
+
+def test_configured_extractor_is_built_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    from carbon_preaudit.web import app as web_app
+
+    built: list[Extractor] = []
+
+    def factory() -> Extractor:
+        extractor = FakeExtractor(ClaimedValues())
+        built.append(extractor)
+        return extractor
+
+    monkeypatch.setattr(web_app, "make_extractor", factory)
+    lazy = web_app._LazyExtractor()  # pyright: ignore[reportPrivateUsage]
+    lazy.extract("a")
+    lazy.extract("b")
+    assert len(built) == 1

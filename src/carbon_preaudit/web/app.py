@@ -99,13 +99,22 @@ class _LazyExtractor:
     """Builds the configured extractor on first use, so a missing key surfaces as ExtractionError
     inside the endpoint (shown as a notice) and not as a 500 while resolving the dependency."""
 
+    def __init__(self) -> None:
+        self._extractor: Extractor | None = None
+
     def extract(self, text: str) -> ClaimedValues:
-        return make_extractor().extract(text)
+        # Built once and reused; a failed build (no key yet) is retried on the next request.
+        if self._extractor is None:
+            self._extractor = make_extractor()
+        return self._extractor.extract(text)
+
+
+_EXTRACTOR = _LazyExtractor()
 
 
 def get_extractor() -> Extractor:
     """Dependency: the configured extractor. Tests override it with a FakeExtractor."""
-    return _LazyExtractor()
+    return _EXTRACTOR
 
 
 @app.get("/health")
