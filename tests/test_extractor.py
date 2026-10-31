@@ -206,13 +206,19 @@ def test_other_sdk_error_raises_extraction_error() -> None:
 
 
 def test_missing_api_key_raises_extraction_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
-    try:
-        extractor = AnthropicExtractor()
-    except ExtractionError:
-        return  # the client refused to be built: also fine
-    with pytest.raises(ExtractionError):
+    class NoCredentials:
+        def __init__(self) -> None:
+            self.auth_headers: dict[str, str] = {}
+            self.custom_auth = None
+
+    monkeypatch.setattr(anthropic, "Anthropic", NoCredentials)
+    with pytest.raises(ExtractionError, match="no API key"):
+        AnthropicExtractor()
+
+
+def test_type_error_in_call_is_not_reported_as_extraction_error() -> None:
+    extractor, _ = extractor_with(TypeError("unexpected keyword argument"))
+    with pytest.raises(TypeError):
         extractor.extract("text")
 
 

@@ -136,6 +136,12 @@ class AnthropicExtractor:
                 client = anthropic.Anthropic()
             except anthropic.AnthropicError as e:
                 raise ExtractionError(f"Anthropic client could not be created: {e}") from e
+            # Checked here so that the call below needs no TypeError handler: the SDK raises a
+            # plain TypeError at request time when no API key, token or credentials are set.
+            if not client.auth_headers and client.custom_auth is None:
+                raise ExtractionError(
+                    "Anthropic client could not be created: no API key, token or credentials set"
+                )
         self._client = client
         self._model = model or os.environ.get(MODEL_ENV_VAR) or DEFAULT_MODEL
 
@@ -156,8 +162,7 @@ class AnthropicExtractor:
                 betas=[FALLBACK_BETA],
                 fallbacks="default",
             )
-        # The SDK raises a plain TypeError when no API key or token is configured.
-        except (anthropic.AnthropicError, TypeError) as e:
+        except anthropic.AnthropicError as e:
             raise ExtractionError(f"Anthropic API call failed: {e}") from e
         # The stop reason is checked before the output is parsed: a refusal or a cut-off
         # reply must not show up as a schema error.
