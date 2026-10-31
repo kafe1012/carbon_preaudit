@@ -36,6 +36,7 @@ belegte Befunde. Das LLM extrahiert nur, bewertet wird deterministisch in Python
 | `CARBON_FRACTION` | `0.47` | Kohlenstoffanteil der Trockenbiomasse |
 | `CO2_PER_C` | `44 / 12` | Umrechnung C → CO₂ |
 | `DEFAULT_WOOD_DENSITY_G_CM3` | `0.6` | Demo-Annahme, wenn `wood_density` fehlt |
+| `MAX_WOOD_DENSITY_G_CM3` | `1.5` | Plausibilitätsgrenze: größere Werte sind fast sicher kg/m³ statt g/cm³, der Parser lehnt sie ab |
 | `DEFAULT_BUFFER_PCT` | `20.0` | Pufferabzug in Prozent |
 | `TOL_AREA_REL` | `0.01` | Toleranz Fläche, relativ |
 | `TOL_TONNES_REL` | `0.02` | Toleranz Tonnen, relativ, auch für Diagnosen |
@@ -239,11 +240,18 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
 - Ob die Plots innerhalb des Polygons liegen oder sich überlappen, wird nicht geprüft. Die CSV hat keine
   Koordinaten, und ohne shapely gibt es keine Geometrie-Operationen. Kommt nach „Bewusst nicht enthalten“.
 
+- Baumlose Plots sind ausgeschlossen. Sie bräuchten ein anderes CSV-Format (eine Zeile ohne Baum) und würden
+  tCO₂e/ha senken, weil ein gemessener leerer Plot mit 0 tCO₂e in den Nenner gehörte. `Plot(trees=())` bleibt
+  ein Pydantic-`ValidationError`, weil der Parser keinen leeren Plot erzeugen kann.
+- Selbstüberschneidung wird nur je Ring geprüft (alle Segmentpaare, planar in lon/lat). Ringe untereinander
+  (Loch außerhalb des Außenrings, sich schneidende Löcher) werden nicht geprüft, nur dass jedes Loch
+  flächenmäßig kleiner ist als der Außenring.
+
 ## Fortschritt
 
 - [x] 01 Architektur
 - [x] 02 Projektgerüst
-- [ ] 03 Berechnungslauf
+- [x] 03 Berechnungslauf
 - [ ] 04 Speicherung der Läufe
 - [ ] 05 Pre-Audit
 - [ ] 06 Evals
