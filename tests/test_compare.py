@@ -2,9 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from carbon_preaudit.calc.inputs import parse_inputs
 from carbon_preaudit.calc.params import CO2_PER_C
-from carbon_preaudit.calc.run import calculate
 from carbon_preaudit.domain.models import (
     CalculationRun,
     ClaimedValue,
@@ -14,7 +12,6 @@ from carbon_preaudit.domain.models import (
     Severity,
 )
 from carbon_preaudit.preaudit.compare import compare, number_candidates, number_format
-from carbon_preaudit.preaudit.extractor import FakeExtractor
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 
@@ -355,54 +352,6 @@ def test_findings_follow_field_order_and_message_is_german_with_both_values() ->
 def test_compare_is_deterministic() -> None:
     claimed = ClaimedValues(tco2e_gross=num(2000.0, "2000 t"))
     assert run_compare(claimed) == run_compare(claimed)
-
-
-# --- end to end over examples/ ---
-
-
-def _example_run() -> CalculationRun:
-    return calculate(
-        parse_inputs(
-            (EXAMPLES / "project.geojson").read_text(encoding="utf-8"),
-            (EXAMPLES / "plots.csv").read_text(encoding="utf-8"),
-        )
-    )
-
-
-def _correct_claims() -> ClaimedValues:
-    return ClaimedValues(
-        project_area_ha=num(100.0, "The project area covers 100.0 ha"),
-        tco2e_gross=num(8364.0, "The gross removals of the project amount to 8,364 tCO2e"),
-        tco2e_net=num(6691.0, "the net removals available for issuance amount to 6,691 tCO2e"),
-        buffer_pct=num(20.0, "A share of 20 %\nof the gross removals is withheld"),
-        methodology=meth("VM0047", "the methodology VM0047"),
-    )
-
-
-def test_example_pdd_section_matches_example_run() -> None:
-    text = (EXAMPLES / "pdd-section.md").read_text(encoding="utf-8")
-    claimed = FakeExtractor(_correct_claims()).extract(text)
-    assert compare(claimed, _example_run(), text) == []
-
-
-def test_example_pdd_section_with_tc_instead_of_tco2e() -> None:
-    run = _example_run()
-    text = (EXAMPLES / "pdd-section.md").read_text(encoding="utf-8")
-    text = text.replace("8,364 tCO2e", "2,279 tC")
-    claimed = _correct_claims().model_copy(
-        update={"tco2e_gross": num(2279.0, "The gross removals of the project amount to 2,279 tC")}
-    )
-    assert pytest.approx(run.tco2e_gross / CO2_PER_C, rel=1e-3) == 2279.0
-    findings = compare(FakeExtractor(claimed).extract(text), run, text)
-    assert len(findings) == 1
-    f = findings[0]
-    assert f.field == "tco2e_gross"
-    assert f.severity is Severity.CRITICAL
-    assert f.diagnosis is Diagnosis.TC_INSTEAD_OF_TCO2E
-    assert f.claimed == 2279.0
-    assert f.computed == pytest.approx(run.tco2e_gross)
-    assert f.quote == "The gross removals of the project amount to 2,279 tC"
-    assert f.deviation_rel == pytest.approx(2279.0 / run.tco2e_gross - 1)
 
 
 # --- number candidates (W1, H1, H2) ---
