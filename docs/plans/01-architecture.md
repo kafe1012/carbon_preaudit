@@ -91,6 +91,7 @@ Alle Modelle sind `frozen`. Die Einheit steht im Feldnamen.
 | | `quote` | `str \| None` | wörtliches Zitat; `value` und `quote` beide gesetzt oder beide `None` |
 | `ClaimedValues` | `project_area_ha`, `tco2e_gross`, `tco2e_net`, `buffer_pct` | `ClaimedValue[float]` | |
 | | `methodology` | `ClaimedValue[str]` | |
+| | `extracted_by` | `str \| None` | Modell, das tatsächlich geantwortet hat (`response.model`); `None` beim `FakeExtractor` |
 | `Severity` | | `StrEnum` | `critical` / `major` / `info` (UI: kritisch / wichtig / hinweis) |
 | `Diagnosis` | | `StrEnum` | `tc_instead_of_tco2e` / `gross_net_swapped` |
 | `Finding` | `field` | `Literal[...]` | eines der fünf Felder aus `ClaimedValues` |
@@ -155,11 +156,40 @@ Innerhalb der Toleranz entsteht kein Befund.
 **Zitatprüfung:** `compare()` prüft, ob jedes `quote` wörtlich im Text steht. Leerzeichen werden normalisiert.
 Steht es nicht im Text, wird der Wert nicht verglichen, und es entsteht ein `info`-Befund
 „Zitat nicht im Text gefunden“. Damit sind halluzinierte Zitate abgefangen (Leitprinzip 3, ADR 0001).
+Ein Zitat gilt außerdem nur als Beleg, wenn es an Wortgrenzen im Text steht (Whitespace normalisiert) und
+mindestens 3 Wörter hat. Eine Zahl, die mitten in einer längeren Zahl beginnt oder endet („0 ha“ in
+„100.0 ha“), liegt nicht an einer Wortgrenze. Sonst wird nicht verglichen, und es entsteht ein `info`-Befund
+„Zitat zu kurz als Beleg“. Das gilt auch für `methodology`.
+
+**Wertprüfung:** Danach prüft `compare()` für Zahlenfelder, ob der extrahierte Wert im (geprüften) Zitat vorkommt.
+Alle Zahlen im Zitat werden normalisiert: Tausendertrenner `.`, `,`, Leerzeichen, schmales Leerzeichen und `'`
+sowie Dezimalkomma und Dezimalpunkt. Mehrdeutige Fälle wie „8.364“ (deutsch 8364, englisch 8,364) sind erlaubt,
+beide Lesarten zählen als Kandidat. Entspricht keiner der Kandidaten dem Wert (`math.isclose`,
+`rel_tol=1e-9`, Modulkonstante in `compare.py`, kein Fachwert), wird das Feld nicht verglichen, und es entsteht
+ein `info`-Befund „Wert nicht im Zitat belegt“. Bei `methodology` muss die normalisierte Methodologie (ohne
+Leerzeichen und Bindestriche, Großschreibung) im ebenso normalisierten Zitat stehen.
+
+Regeln für Zahlen im Zitat:
+
+- Leerzeichen und schmales Leerzeichen (nicht Zeilenumbruch) trennen Tausendergruppen. Gierig von links gilt
+  eine Folge als eine Zahl, wenn die erste Gruppe 1–3 Ziffern hat und alle weiteren genau 3. „20 100 ha“
+  ergibt nur 20100, „year 2023 8 364“ ergibt 2023 und 8364. Die Einzelgruppen einer gültigen Zahl sind keine
+  Kandidaten.
+- Ziffern, die an Buchstaben grenzen („tCO2e“, „VM0047“), sind keine Kandidaten.
+- Ein Vorzeichen direkt vor der Zahl bleibt erhalten („-5 %“ ist −5), außer es folgt auf Buchstabe oder Ziffer.
+- Bei Bereichen („8,000–9,000“) sind beide Enden Kandidaten, ohne Hinweis auf den Bereich.
+- Wissenschaftliche Notation („1.2e4“) ergibt keinen Kandidaten, der Wert gilt als nicht belegt.
 
 **Extractor:** Der Prompt verlangt, Zahlen so zu übernehmen, wie sie im Text stehen. Der Extractor rechnet
 nicht, rechnet keine Einheiten um und bewertet nicht. Das Modell kommt aus der Umgebungsvariable
-`CARBON_PREAUDIT_MODEL`; den Default legt Schritt 05 fest. Die Ausgabe ist strukturiert und wird gegen
-`ClaimedValues` validiert. Ungültige Ausgaben werfen `ExtractionError`.
+`CARBON_PREAUDIT_MODEL`; der Default ist `claude-opus-5-5`. Die Ausgabe ist strukturiert (flaches Ausgabemodell,
+danach Überführung in `ClaimedValues` samt Validierung). Ungültige Ausgaben werfen `ExtractionError`.
+Aufruf über `client.beta.messages.create` mit `output_config.format` (JSON-Schema); `stop_reason` (`refusal`,
+`max_tokens`) wird vor der Validierung geprüft, damit die Ursache stimmt. Fehlender API-Key und alle
+SDK-Fehler (`anthropic.AnthropicError`) werden zu `ExtractionError`. `fallbacks="default"` bleibt: bei einer
+Ablehnung kann serverseitig ein anderes Modell antworten. `ClaimedValues.extracted_by` hält fest, welches
+Modell tatsächlich geantwortet hat (`response.model`). Die Feldbeschreibung der Tonnen im Prompt ist
+einheitenneutral (tCO2e oder tC), eine Angabe in tC wird extrahiert und nicht auf `null` gesetzt.
 
 ```mermaid
 flowchart LR
@@ -246,6 +276,8 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
 - Selbstüberschneidung wird nur je Ring geprüft (alle Segmentpaare, planar in lon/lat). Ringe untereinander
   (Loch außerhalb des Außenrings, sich schneidende Löcher) werden nicht geprüft, nur dass jedes Loch
   flächenmäßig kleiner ist als der Außenring.
+- `compare()` hat keine eigene Version, und Befunde tragen keinen `run_hash`. Klären vor 06/07, ob Befunde
+  reproduzierbar abgelegt werden sollen.
 
 ## Fortschritt
 
@@ -253,6 +285,6 @@ markierten Zitaten, darunter die Befundliste. HTMX und Leaflet kommen per CDN mi
 - [x] 02 Projektgerüst
 - [x] 03 Berechnungslauf
 - [ ] 04 Speicherung der Läufe
-- [ ] 05 Pre-Audit
+- [x] 05 Pre-Audit
 - [ ] 06 Evals
 - [ ] 07 Oberfläche
