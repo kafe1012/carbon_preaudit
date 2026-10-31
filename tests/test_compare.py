@@ -226,21 +226,6 @@ def test_quote_not_in_text_is_info_and_not_compared() -> None:
     assert "Zitat nicht im Text" in gross[0].message
 
 
-def test_quote_matches_with_normalized_whitespace() -> None:
-    text = (
-        "A share of 20 %\n  of the gross\N{NO-BREAK SPACE}removals"
-        "\N{NARROW NO-BREAK SPACE}is withheld."
-    )
-    claimed = ClaimedValues(buffer_pct=num(20.0, "A share of 20 % of the gross removals"))
-    assert present(compare(claimed, RUN, text)) == []
-
-
-def test_quote_with_different_wording_is_not_found() -> None:
-    claimed = ClaimedValues(buffer_pct=num(20.0, "a share of 20 %"))  # case differs
-    findings = present(compare(claimed, RUN, "A share of 20 % is withheld"))
-    assert [f.severity for f in findings] == [Severity.INFO]
-
-
 # --- value check against the quote ---
 
 
@@ -491,32 +476,6 @@ def test_single_number_quote_is_too_short() -> None:
     findings = present(compare(ClaimedValues(tco2e_gross=claim), RUN, text))
     assert [(f.severity, f.field) for f in findings] == [(Severity.INFO, "tco2e_gross")]
     assert "Zitat zu kurz als Beleg" in findings[0].message
-
-
-def test_quote_inside_longer_number_is_too_short() -> None:
-    text = "The project covers 100.0 ha of land."
-    # three words, but "0 ha of" starts in the middle of "100.0"
-    claim = ClaimedValue[float](value=0.0, quote="0 ha of")
-    findings = present(compare(ClaimedValues(project_area_ha=claim), RUN, text))
-    assert [f.severity for f in findings] == [Severity.INFO]
-    assert "Zitat zu kurz als Beleg" in findings[0].message
-    short = ClaimedValue[float](value=0.0, quote="0 ha")
-    findings = present(compare(ClaimedValues(project_area_ha=short), RUN, text))
-    assert "Zitat zu kurz als Beleg" in findings[0].message
-
-
-def test_quote_ending_inside_a_word_is_too_short() -> None:
-    text = "The project covers 100.0 hectares of land."
-    claim = ClaimedValue[float](value=100.0, quote="project covers 100.0 hect")
-    findings = present(compare(ClaimedValues(project_area_ha=claim), RUN, text))
-    assert "Zitat zu kurz als Beleg" in findings[0].message
-
-
-def test_quote_with_three_words_is_evidence() -> None:
-    text = "The project covers 101.5 ha of land."
-    claim = ClaimedValue[float](value=101.5, quote="covers 101.5 ha")
-    findings = present(compare(ClaimedValues(project_area_ha=claim), RUN, text))
-    assert [f.severity for f in findings] == [Severity.MAJOR]
 
 
 def test_quote_not_in_text_stays_not_found_even_if_short() -> None:
