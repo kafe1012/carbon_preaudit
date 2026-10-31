@@ -135,8 +135,9 @@ tools/         # eigenes uv-Paket local_tools: Bump-Skript (`uv run bump`), nie 
 - Bezeichner, Docstrings und Commits auf Englisch; Doku in `docs/` und README auf Deutsch
 - Type Hints überall, keine `Any` in `src/`
 - Reine Funktionen in `calc/` und `preaudit/compare.py`, keine I/O dort
-- Jede Logikänderung in `calc/` erhöht `CALC_VERSION`, jede Wertänderung in `params.py`
-  erhöht `PARAMS_VERSION`; Golden-Tests führen Sollwerte nach Version
+- Jede Änderung in `calc/`, die Ergebnisse ändert, erhöht `CALC_VERSION` (Refactorings und reine
+  Fehlerbehandlung nicht, ADR 0002); jede Wertänderung in `params.py` erhöht `PARAMS_VERSION`;
+  Golden-Tests führen Sollwerte nach Version
 - Kein Netzwerkzugriff in Unit-Tests: immer `FakeExtractor`
 - Fehler als eigene Exception-Klassen, keine nackten `except`
 
