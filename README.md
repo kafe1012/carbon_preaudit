@@ -3,6 +3,8 @@
 Pre-Audit-Check für naturbasierte CO₂-Projekte. Worum es geht, steht in
 [docs/problem-statement.md](docs/problem-statement.md).
 
+Einordnung als Arbeitsprobe und Überblick über das Repo: [docs/overview.md](docs/overview.md).
+
 ## Voraussetzungen
 
 - Git
@@ -123,6 +125,8 @@ Als Interpreter `.venv/bin/python` wählen und als Test-Runner pytest.
 - Methodologiekonforme Berechnung nach VM0047, Unsicherheitsabzüge, Leakage
 - PDD-Generierung, RAG über Methodologien, Satellitendaten
 - Mandanten, Login, Zugriffsschutz; Postgres/PostGIS (ADR 0003)
+- Betriebsinfrastruktur (Helm, Terraform, gehostete Datenbank): nur als Pfad beschrieben, siehe
+  [ADR 0009](docs/adr/0009-operations-and-scaling-path.md)
 - Speicherung der Läufe und Befunde (Schritt 04 zurückgestellt)
 - Prüfung, ob die Plots im Polygon liegen oder sich überlappen: Die CSV hat keine Koordinaten.
 - Plots ohne Bäume: Das CSV-Format kennt keine Zeile ohne Baum.

@@ -3,6 +3,13 @@
 Referenz für alle Agenten. Bei fachlichen Fragen zuerst hier nachlesen.
 Was hier nicht steht, nicht erfinden: als offene Frage im Plan notieren.
 
+## Einordnung
+
+Dieses Dokument ist ein vereinfachtes Beispiel, kein vollständiges Fachwissen. Echtes Domänenwissen muss
+aufgebaut werden und entsteht nicht an einem Wochenende. Dazu gehören etwa die Methodologien im Detail,
+Validierung und Verifizierung, Monitoring und die Marktmechanismen. Was für diese Demo bewusst verkürzt ist,
+steht unter [Vereinfachungen](#vereinfachungen-in-dieser-demo).
+
 ## Worum es geht
 
 Projektentwickler setzen Klimaprojekte um, z. B. Aufforstung. Für nachweislich gebundenes CO₂

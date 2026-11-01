@@ -1,5 +1,9 @@
 # Wochenendplan: carbon-preaudit
 
+> Historischer Arbeitsplan vom Start. Der aktuelle Stand steht in [docs/overview.md](docs/overview.md) und in
+> [Plan 01](docs/plans/01-architecture.md). Gemini ist inzwischen Default
+> ([ADR 0008](docs/adr/0008-gemini-as-default-extractor.md)).
+
 Ziel bis Sonntagabend: Berechnungslauf + Pre-Audit-Check, mit Evals, einer Seite und einer Repo-Historie,
 die den Ablauf Planen → Umsetzen → Prüfen → Review → Ausbessern zeigt.
 

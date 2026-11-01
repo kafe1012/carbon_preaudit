@@ -50,6 +50,7 @@ bevor ein Auditor die Abweichung findet.
 Methodologiekonforme Berechnung (VM0047), Unsicherheitsabzüge, Leakage, PDD-Generierung,
 RAG über Methodologien, Satellitendaten, Mandanten/Login, Postgres/PostGIS.
 Diese Punkte landen nur im README-Abschnitt „Bewusst nicht enthalten“.
+Betriebsinfrastruktur (Helm, Terraform, gehostete Datenbank) ist nur als Pfad in ADR 0009 beschrieben.
 
 ## Stack
 
