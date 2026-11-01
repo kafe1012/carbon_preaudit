@@ -2,6 +2,9 @@
 
 Status: angenommen · Datum: 2026-10-29
 
+Stand: Die Persistenz ist noch nicht gebaut (Plan-Schritt 04 zurückgestellt), die Entscheidung gilt für den
+Entwurf. Der Betriebspfad bis Postgres steht in [ADR 0009](0009-operations-and-scaling-path.md).
+
 ## Kontext
 
 Berechnungsläufe sollen gespeichert werden, damit ein Lauf über seinen Hash wieder abrufbar ist. Die Demo

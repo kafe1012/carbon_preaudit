@@ -55,6 +55,8 @@ Die Rollen sind unter `.claude/agents/` definiert. Dort stehen Modell, erlaubte 
   nicht gibt. Der Reviewer hat das als kritischen Befund gemeldet, bevor die CI gescheitert wäre.
 - Jede Entscheidung bleibt als Datei im Repo nachvollziehbar: Plan, Review mit abgehakten Befunden und ADR.
   Der PR verlinkt alle drei.
+- KI-Arbeitsweise und saubere Codebasis stützen sich gegenseitig: Typen, Tests und kleine Module geben den
+  Agenten Leitplanken, Review und Audit halten die Struktur sauber (`docs/reviews/`, `audit/summary.md`).
 - Die Modelle passen zur Aufgabe. Opus plant und nimmt ab, Sonnet setzt um, Fable reviewt, Haiku erledigt
   Mechanisches. Teure Modelle laufen nur dort, wo Urteilsvermögen gefragt ist.
 - Pro Schritt kommt Aufwand dazu: ein Review-Durchlauf und eine Ausbesserungsrunde. Für einen Schritt, der

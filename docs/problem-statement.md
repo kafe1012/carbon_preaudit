@@ -4,6 +4,9 @@ Fachbegriffe, Einheiten und Fallstricke stehen in [DOMAIN.md](../DOMAIN.md).
 Scope und Leitprinzipien stehen in [CLAUDE.md](../CLAUDE.md), die Umsetzung in
 [Plan 01](plans/01-architecture.md).
 
+Einordnung: Das Projekt ist eine Arbeitsprobe und ein stark vereinfachtes Beispiel, siehe
+[Überblick](overview.md) und [DOMAIN.md, „Einordnung“](../DOMAIN.md#einordnung).
+
 ## Problem
 
 Ein Aufforstungsprojekt erhält Credits erst, wenn eine Prüfstelle (VVB) sein PDD validiert hat. Die Zahlen
