@@ -13,7 +13,9 @@
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
-    var layer = L.geoJSON(JSON.parse(data.textContent)).addTo(map);
+    var layer = L.geoJSON(JSON.parse(data.textContent), {
+      style: { color: "#005a58", weight: 2, fillColor: "#2fac66", fillOpacity: 0.25 },
+    }).addTo(map);
     map.fitBounds(layer.getBounds());
   }
 
